@@ -149,8 +149,13 @@
     if (!appConfig) return;
     const s = appConfig.settings;
 
-    // General
+    // Site Title
     document.getElementById('siteName').value = s.siteName || 'Dashma';
+    setSelectValue('titleSize', s.titleSize || 'large');
+    setSelectValue('titleAlignment', s.titleAlignment || 'center');
+    document.getElementById('showTitle').checked = s.showTitle !== false;
+
+    // Colors
     document.getElementById('backgroundColor').value = s.backgroundColor || '#212121';
     document.getElementById('bgColorPicker').value = s.backgroundColor || '#212121';
     document.getElementById('textColor').value = s.textColor || '#ffffff';
@@ -238,6 +243,9 @@
   async function saveAppearance() {
     const settings = {
       siteName: document.getElementById('siteName').value,
+      titleSize: document.getElementById('titleSize').value,
+      titleAlignment: document.getElementById('titleAlignment').value,
+      showTitle: document.getElementById('showTitle').checked,
       backgroundColor: document.getElementById('backgroundColor').value,
       textColor: document.getElementById('textColor').value,
       accentColor: document.getElementById('accentColor').value,

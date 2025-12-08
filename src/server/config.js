@@ -87,6 +87,9 @@ function getPublicSettings() {
   const config = getConfig();
   return {
     siteName: config.settings.siteName,
+    titleSize: config.settings.titleSize,
+    titleAlignment: config.settings.titleAlignment,
+    showTitle: config.settings.showTitle,
     backgroundColor: config.settings.backgroundColor,
     backgroundImage: config.settings.backgroundImage,
     fontFamily: config.settings.fontFamily,
@@ -97,6 +100,7 @@ function getPublicSettings() {
     columns: config.settings.columns,
     linkOpenBehavior: config.settings.linkOpenBehavior,
     showLinkIcons: config.settings.showLinkIcons,
+    showCategoryBackground: config.settings.showCategoryBackground,
     linkHoverEffect: config.settings.linkHoverEffect,
     categoryHoverEffect: config.settings.categoryHoverEffect,
     nestingAnimation: config.settings.nestingAnimation,
