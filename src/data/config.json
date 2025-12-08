@@ -1,0 +1,115 @@
+{
+  "settings": {
+    "siteName": "Dashma",
+    "backgroundColor": "#212121",
+    "backgroundImage": null,
+    "fontFamily": "'Courier New', Courier, monospace",
+    "titleFontFamily": "'Courier New', Courier, monospace",
+    "textColor": "#ffffff",
+    "accentColor": "#888888",
+    "linkDisplayMode": "cards",
+    "columns": 3,
+    "linkOpenBehavior": "newTab",
+    "showLinkIcons": true,
+    "linkHoverEffect": "glow",
+    "categoryHoverEffect": "fade",
+    "nestingAnimation": "slide",
+    "authMode": "basic",
+    "entraId": {
+      "clientId": "",
+      "tenantId": "",
+      "clientSecret": "",
+      "redirectUri": ""
+    }
+  },
+  "admin": {
+    "username": "admin",
+    "passwordHash": "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
+    "mustChangePassword": true
+  },
+  "categories": [
+    {
+      "id": "cat-1",
+      "name": "Social",
+      "order": 0
+    },
+    {
+      "id": "cat-2",
+      "name": "Productivity",
+      "order": 1
+    },
+    {
+      "id": "cat-3",
+      "name": "Development",
+      "order": 2
+    }
+  ],
+  "links": [
+    {
+      "id": "link-1",
+      "name": "GitHub",
+      "url": "https://github.com",
+      "categoryId": "cat-3",
+      "tags": ["code", "git"],
+      "icon": null,
+      "customIcon": null,
+      "openBehavior": null,
+      "order": 0
+    },
+    {
+      "id": "link-2",
+      "name": "Stack Overflow",
+      "url": "https://stackoverflow.com",
+      "categoryId": "cat-3",
+      "tags": ["code", "help"],
+      "icon": null,
+      "customIcon": null,
+      "openBehavior": null,
+      "order": 1
+    },
+    {
+      "id": "link-3",
+      "name": "Twitter",
+      "url": "https://twitter.com",
+      "categoryId": "cat-1",
+      "tags": ["social"],
+      "icon": null,
+      "customIcon": null,
+      "openBehavior": null,
+      "order": 0
+    },
+    {
+      "id": "link-4",
+      "name": "Reddit",
+      "url": "https://reddit.com",
+      "categoryId": "cat-1",
+      "tags": ["social", "news"],
+      "icon": null,
+      "customIcon": null,
+      "openBehavior": null,
+      "order": 1
+    },
+    {
+      "id": "link-5",
+      "name": "Google Drive",
+      "url": "https://drive.google.com",
+      "categoryId": "cat-2",
+      "tags": ["storage", "docs"],
+      "icon": null,
+      "customIcon": null,
+      "openBehavior": null,
+      "order": 0
+    },
+    {
+      "id": "link-6",
+      "name": "Notion",
+      "url": "https://notion.so",
+      "categoryId": "cat-2",
+      "tags": ["notes", "docs"],
+      "icon": null,
+      "customIcon": null,
+      "openBehavior": null,
+      "order": 1
+    }
+  ]
+}

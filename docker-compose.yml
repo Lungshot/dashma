@@ -1,0 +1,14 @@
+services:
+  dashma:
+    build: .
+    container_name: dashma
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - SESSION_SECRET=${SESSION_SECRET:-dashma-change-this-secret-in-production-min32chars}
+    volumes:
+      - ./src/data:/app/src/data
+      - ./src/public/uploads:/app/src/public/uploads

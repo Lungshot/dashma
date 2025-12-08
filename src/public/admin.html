@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashma Admin</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1 class="sidebar-title">Dashma</h1>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="nav-item active" data-panel="appearance">Appearance</a>
+        <a class="nav-item" data-panel="categories">Categories</a>
+        <a class="nav-item" data-panel="links">Links</a>
+        <a class="nav-item" data-panel="auth">Authentication</a>
+        <a class="nav-item" data-panel="backup">Backup</a>
+        <a class="nav-item" data-panel="account">Account</a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="/" target="_blank">View Site</a> &nbsp;|&nbsp;
+        <a href="/admin/logout">Logout</a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      
+      <!-- Appearance Panel -->
+      <div class="panel active" id="panel-appearance">
+        <div class="content-header">
+          <h2 class="content-title">Appearance</h2>
+          <p class="content-subtitle">Customize the look and feel of your dashboard</p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">General</h3>
+          <div class="form-group">
+            <label class="form-label">Site Name</label>
+            <input type="text" class="form-input" id="siteName" placeholder="Dashma">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Background Color</label>
+              <div class="color-picker-wrapper">
+                <input type="color" class="color-picker" id="bgColorPicker" value="#212121">
+                <input type="text" class="form-input color-value" id="backgroundColor" value="#212121">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Text Color</label>
+              <div class="color-picker-wrapper">
+                <input type="color" class="color-picker" id="textColorPicker" value="#ffffff">
+                <input type="text" class="form-input color-value" id="textColor" value="#ffffff">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Accent Color</label>
+              <div class="color-picker-wrapper">
+                <input type="color" class="color-picker" id="accentColorPicker" value="#888888">
+                <input type="text" class="form-input color-value" id="accentColor" value="#888888">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Background Image</h3>
+          <div class="form-group">
+            <div class="file-upload" id="bgImageUpload">
+              <input type="file" accept="image/*" id="bgImageInput">
+              <p class="file-upload-text">Click or drag to upload background image</p>
+            </div>
+            <div class="preview-container" id="bgImagePreview"></div>
+          </div>
+          <button class="btn btn-sm btn-danger" id="clearBgImage">Clear Background Image</button>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Typography</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Body Font</label>
+              <select class="form-select" id="fontFamily">
+                <option value="'Courier New', Courier, monospace">Courier New (Monospace)</option>
+                <option value="'Consolas', monospace">Consolas</option>
+                <option value="'Monaco', monospace">Monaco</option>
+                <option value="'Roboto Mono', monospace">Roboto Mono</option>
+                <option value="'Arial', sans-serif">Arial</option>
+                <option value="'Helvetica Neue', sans-serif">Helvetica Neue</option>
+                <option value="'Inter', sans-serif">Inter</option>
+                <option value="'Georgia', serif">Georgia</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Title Font</label>
+              <select class="form-select" id="titleFontFamily">
+                <option value="'Courier New', Courier, monospace">Courier New (Monospace)</option>
+                <option value="'Consolas', monospace">Consolas</option>
+                <option value="'Monaco', monospace">Monaco</option>
+                <option value="'Roboto Mono', monospace">Roboto Mono</option>
+                <option value="'Arial', sans-serif">Arial</option>
+                <option value="'Helvetica Neue', sans-serif">Helvetica Neue</option>
+                <option value="'Inter', sans-serif">Inter</option>
+                <option value="'Georgia', serif">Georgia</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Layout</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Columns</label>
+              <select class="form-select" id="columns">
+                <option value="1">1 Column</option>
+                <option value="2">2 Columns</option>
+                <option value="3">3 Columns</option>
+                <option value="4">4 Columns</option>
+                <option value="5">5 Columns</option>
+                <option value="6">6 Columns</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Link Display Mode</label>
+              <select class="form-select" id="linkDisplayMode">
+                <option value="cards">Cards</option>
+                <option value="text">Text Only</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Link Open Behavior</label>
+              <select class="form-select" id="linkOpenBehavior">
+                <option value="newTab">New Tab</option>
+                <option value="sameTab">Same Tab</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-checkbox">
+              <input type="checkbox" id="showLinkIcons">
+              <span>Show Link Icons (favicons)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Animations</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Link Hover Effect</label>
+              <select class="form-select" id="linkHoverEffect">
+                <option value="glow">Glow</option>
+                <option value="fade">Fade</option>
+                <option value="scale">Scale</option>
+                <option value="underline">Underline</option>
+                <option value="slide">Slide</option>
+                <option value="border">Border</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category Hover Effect</label>
+              <select class="form-select" id="categoryHoverEffect">
+                <option value="fade">Fade</option>
+                <option value="glow">Glow</option>
+                <option value="scale">Scale</option>
+                <option value="color">Color Change</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nesting Animation</label>
+              <select class="form-select" id="nestingAnimation">
+                <option value="slide">Slide</option>
+                <option value="fade">Fade</option>
+                <option value="zoom">Zoom</option>
+                <option value="blur">Blur</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" id="saveAppearance">Save Changes</button>
+        </div>
+      </div>
+
+      <!-- Categories Panel -->
+      <div class="panel" id="panel-categories">
+        <div class="content-header">
+          <h2 class="content-title">Categories</h2>
+          <p class="content-subtitle">Organize your links into categories</p>
+        </div>
+
+        <div class="card">
+          <div class="btn-group mb-20">
+            <button class="btn btn-primary" id="addCategoryBtn">Add Category</button>
+          </div>
+          <ul class="item-list" id="categoryList">
+            <!-- Categories rendered here -->
+          </ul>
+        </div>
+      </div>
+
+      <!-- Links Panel -->
+      <div class="panel" id="panel-links">
+        <div class="content-header">
+          <h2 class="content-title">Links</h2>
+          <p class="content-subtitle">Manage your dashboard links</p>
+        </div>
+
+        <div class="card">
+          <div class="form-row mb-20">
+            <div class="form-group" style="margin-bottom: 0;">
+              <select class="form-select" id="linkCategoryFilter">
+                <option value="">All Categories</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <button class="btn btn-primary" id="addLinkBtn">Add Link</button>
+            </div>
+          </div>
+          <ul class="item-list" id="linkList">
+            <!-- Links rendered here -->
+          </ul>
+        </div>
+      </div>
+
+      <!-- Authentication Panel -->
+      <div class="panel" id="panel-auth">
+        <div class="content-header">
+          <h2 class="content-title">Authentication</h2>
+          <p class="content-subtitle">Configure how users access your dashboard</p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Authentication Mode</h3>
+          <div class="form-group">
+            <select class="form-select" id="authMode">
+              <option value="none">No Authentication (Public)</option>
+              <option value="basic">Basic Authentication</option>
+              <option value="entraId">Microsoft Entra ID (SSO)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card" id="entraIdSettings">
+          <h3 class="card-title">Microsoft Entra ID Settings</h3>
+          <div class="form-group">
+            <label class="form-label">Client ID</label>
+            <input type="text" class="form-input" id="entraClientId" placeholder="Application (client) ID">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tenant ID</label>
+            <input type="text" class="form-input" id="entraTenantId" placeholder="Directory (tenant) ID">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Client Secret</label>
+            <input type="password" class="form-input" id="entraClientSecret" placeholder="Client secret value">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Redirect URI</label>
+            <input type="text" class="form-input" id="entraRedirectUri" placeholder="https://yourdomain.com/admin/callback">
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" id="saveAuth">Save Authentication Settings</button>
+        </div>
+      </div>
+
+      <!-- Backup Panel -->
+      <div class="panel" id="panel-backup">
+        <div class="content-header">
+          <h2 class="content-title">Backup & Restore</h2>
+          <p class="content-subtitle">Export and import your configuration</p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Export Configuration</h3>
+          <p class="text-muted mb-20">Download your current configuration as a JSON file.</p>
+          <button class="btn btn-primary" id="exportConfig">Download Config</button>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Import Configuration</h3>
+          <p class="text-muted mb-20">Upload a previously exported configuration file.</p>
+          <div class="file-upload" id="importConfigUpload">
+            <input type="file" accept=".json" id="importConfigInput">
+            <p class="file-upload-text">Click or drag to upload config file</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Panel -->
+      <div class="panel" id="panel-account">
+        <div class="content-header">
+          <h2 class="content-title">Account Settings</h2>
+          <p class="content-subtitle">Manage your admin credentials</p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Change Credentials</h3>
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            <input type="text" class="form-input" id="adminUsername" placeholder="admin">
+          </div>
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input type="password" class="form-input" id="adminPassword" placeholder="Leave blank to keep current">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password</label>
+            <input type="password" class="form-input" id="adminPasswordConfirm" placeholder="Confirm new password">
+          </div>
+          <button class="btn btn-primary" id="saveCredentials">Update Credentials</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Category Modal -->
+  <div class="modal-overlay" id="categoryModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="categoryModalTitle">Add Category</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="categoryId">
+        <div class="form-group">
+          <label class="form-label">Category Name</label>
+          <input type="text" class="form-input" id="categoryName" placeholder="Enter category name">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('categoryModal')">Cancel</button>
+        <button class="btn btn-primary" id="saveCategoryBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Link Modal -->
+  <div class="modal-overlay" id="linkModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="linkModalTitle">Add Link</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="linkId">
+        <div class="form-group">
+          <label class="form-label">Link Name</label>
+          <input type="text" class="form-input" id="linkName" placeholder="Enter link name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL</label>
+          <input type="url" class="form-input" id="linkUrl" placeholder="https://example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="linkCategory"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tags (comma separated)</label>
+          <input type="text" class="form-input" id="linkTags" placeholder="tag1, tag2, tag3">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Custom Icon URL (optional)</label>
+          <input type="text" class="form-input" id="linkCustomIcon" placeholder="https://example.com/icon.png">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Open Behavior</label>
+          <select class="form-select" id="linkOpenBehaviorModal">
+            <option value="">Use Global Setting</option>
+            <option value="newTab">New Tab</option>
+            <option value="sameTab">Same Tab</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('linkModal')">Cancel</button>
+        <button class="btn btn-primary" id="saveLinkBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>
