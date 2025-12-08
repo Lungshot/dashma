@@ -32,18 +32,43 @@ body {
 
 /* Header */
 .header {
-  text-align: center;
   margin-bottom: 40px;
 }
 
+.header.align-left { text-align: left; }
+.header.align-center { text-align: center; }
+.header.align-right { text-align: right; }
+
+.header.hidden { display: none; }
+
 .site-title {
   font-family: var(--title-font, 'Courier New', Courier, monospace);
-  font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 300;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--text-color, #ffffff);
   margin-bottom: 10px;
+}
+
+/* Title sizes */
+.site-title.size-small {
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  letter-spacing: 0.2em;
+}
+
+.site-title.size-medium {
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  letter-spacing: 0.25em;
+}
+
+.site-title.size-large {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  letter-spacing: 0.3em;
+}
+
+.site-title.size-xlarge {
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  letter-spacing: 0.35em;
 }
 
 /* Search */

@@ -25,7 +25,7 @@
   function applySettings() {
     const s = appData.settings;
     const root = document.documentElement;
-    
+
     root.style.setProperty('--bg-color', s.backgroundColor);
     root.style.setProperty('--bg-image', s.backgroundImage ? `url(${s.backgroundImage})` : 'none');
     root.style.setProperty('--font-family', s.fontFamily);
@@ -33,7 +33,23 @@
     root.style.setProperty('--text-color', s.textColor);
     root.style.setProperty('--accent-color', s.accentColor);
 
-    document.querySelector('.site-title').textContent = s.siteName;
+    // Apply title settings
+    const header = document.querySelector('.header');
+    const siteTitle = document.querySelector('.site-title');
+    siteTitle.textContent = s.siteName;
+
+    // Title size
+    siteTitle.className = 'site-title';
+    siteTitle.classList.add(`size-${s.titleSize || 'large'}`);
+
+    // Title alignment
+    header.className = 'header';
+    header.classList.add(`align-${s.titleAlignment || 'center'}`);
+
+    // Show/hide title
+    if (s.showTitle === false) {
+      header.classList.add('hidden');
+    }
 
     const grid = document.querySelector('.categories-grid');
     grid.className = `categories-grid cols-${s.columns}`;
