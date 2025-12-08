@@ -308,6 +308,62 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+/* Hacked/Matrix text effect - handled by JS, just ensure smooth transition */
+.hover-hacked {
+  transition: all 0.2s ease;
+}
+
+.hover-hacked:hover {
+  color: rgba(255, 255, 255, 1);
+}
+
+/* Typewriter effect */
+.hover-typewriter:hover .link-name {
+  animation: typewriter-blink 0.5s step-end infinite;
+}
+
+@keyframes typewriter-blink {
+  0%, 100% { border-right: 2px solid transparent; }
+  50% { border-right: 2px solid var(--text-color, #ffffff); }
+}
+
+/* Glitch effect */
+.hover-glitch:hover {
+  animation: glitch 0.3s ease;
+}
+
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}
+
+/* Neon pulse effect */
+.hover-neon:hover {
+  animation: neon-pulse 0.5s ease-in-out;
+  text-shadow: 0 0 5px var(--text-color, #ffffff),
+               0 0 10px var(--text-color, #ffffff),
+               0 0 20px var(--accent-color, #888888);
+}
+
+@keyframes neon-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+/* Blur in effect */
+.hover-blur:hover {
+  animation: blur-in 0.3s ease forwards;
+}
+
+@keyframes blur-in {
+  0% { filter: blur(4px); opacity: 0.5; }
+  100% { filter: blur(0); opacity: 1; }
+}
+
 /* Category Hover Effects */
 .cat-hover-fade:hover .category-title {
   opacity: 0.7;
@@ -362,6 +418,47 @@ body {
 .keyboard-nav .category-header:focus {
   outline: 2px solid rgba(255, 255, 255, 0.5);
   outline-offset: 2px;
+}
+
+/* Compact mode - no category backgrounds */
+.compact-mode .category {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 15px;
+}
+
+.compact-mode .category-header {
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.compact-mode .category.collapsed .category-header {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.compact-mode .category-links {
+  gap: 4px;
+}
+
+.compact-mode .link-card {
+  padding: 8px 10px;
+  background: transparent;
+  border-radius: 4px;
+}
+
+.compact-mode .link-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.compact-mode .link-text {
+  padding: 4px 0;
+}
+
+.compact-mode .categories-grid {
+  gap: 10px;
 }
 
 /* Mobile adjustments */

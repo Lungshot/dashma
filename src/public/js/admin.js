@@ -173,6 +173,7 @@
     setSelectValue('linkDisplayMode', s.linkDisplayMode);
     setSelectValue('linkOpenBehavior', s.linkOpenBehavior);
     document.getElementById('showLinkIcons').checked = s.showLinkIcons !== false;
+    document.getElementById('showCategoryBackground').checked = s.showCategoryBackground !== false;
 
     // Animations
     setSelectValue('linkHoverEffect', s.linkHoverEffect);
@@ -246,6 +247,7 @@
       linkDisplayMode: document.getElementById('linkDisplayMode').value,
       linkOpenBehavior: document.getElementById('linkOpenBehavior').value,
       showLinkIcons: document.getElementById('showLinkIcons').checked,
+      showCategoryBackground: document.getElementById('showCategoryBackground').checked,
       linkHoverEffect: document.getElementById('linkHoverEffect').value,
       categoryHoverEffect: document.getElementById('categoryHoverEffect').value,
       nestingAnimation: document.getElementById('nestingAnimation').value

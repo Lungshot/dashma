@@ -34,10 +34,17 @@
     root.style.setProperty('--accent-color', s.accentColor);
 
     document.querySelector('.site-title').textContent = s.siteName;
-    
+
     const grid = document.querySelector('.categories-grid');
     grid.className = `categories-grid cols-${s.columns}`;
     grid.classList.add(`nest-${s.nestingAnimation}`);
+
+    // Apply compact mode if category background is disabled
+    if (s.showCategoryBackground === false) {
+      document.body.classList.add('compact-mode');
+    } else {
+      document.body.classList.remove('compact-mode');
+    }
   }
 
   // Render categories and links
@@ -83,6 +90,11 @@
         }
       });
     });
+
+    // Setup hacked text effect listeners if enabled
+    if (appData.settings.linkHoverEffect === 'hacked') {
+      setupHackedTextListeners();
+    }
   }
 
   // Render a single link
@@ -338,6 +350,62 @@
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  // Hacked/Matrix text effect - scrambles letters before revealing text
+  function hackedTextEffect(element) {
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const originalText = element.dataset.value;
+    if (!originalText) return;
+
+    // Clear any existing interval
+    if (element.hackedInterval) {
+      clearInterval(element.hackedInterval);
+    }
+
+    let iteration = 0;
+    element.hackedInterval = setInterval(() => {
+      element.innerText = originalText
+        .split("")
+        .map((letter, index) => {
+          if (index < iteration) return originalText[index];
+          if (letter === " ") return " ";
+          return letters[Math.floor(Math.random() * 26)];
+        })
+        .join("");
+
+      if (iteration >= originalText.length) {
+        clearInterval(element.hackedInterval);
+        element.hackedInterval = null;
+      }
+      iteration += 1/3;
+    }, 30);
+  }
+
+  // Reset hacked text to original
+  function resetHackedText(element) {
+    if (element.hackedInterval) {
+      clearInterval(element.hackedInterval);
+      element.hackedInterval = null;
+    }
+    const originalText = element.dataset.value;
+    if (originalText) {
+      element.innerText = originalText;
+    }
+  }
+
+  // Setup hacked text effect listeners
+  function setupHackedTextListeners() {
+    document.querySelectorAll('.hover-hacked .link-name').forEach(element => {
+      // Store original text if not already stored
+      if (!element.dataset.value) {
+        element.dataset.value = element.innerText;
+      }
+
+      const link = element.closest('.hover-hacked');
+      link.addEventListener('mouseenter', () => hackedTextEffect(element));
+      link.addEventListener('mouseleave', () => resetHackedText(element));
+    });
   }
 
   // Start the app
