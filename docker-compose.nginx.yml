@@ -1,0 +1,31 @@
+services:
+  dashma:
+    build: .
+    container_name: dashma
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - SESSION_SECRET=${SESSION_SECRET:-dashma-change-this-secret-in-production-min32chars}
+    volumes:
+      - ./src/data:/app/src/data
+      - ./src/public/uploads:/app/src/public/uploads
+    networks:
+      - dashma-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: dashma-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - dashma
+    networks:
+      - dashma-network
+
+networks:
+  dashma-network:
+    driver: bridge

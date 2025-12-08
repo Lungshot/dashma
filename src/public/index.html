@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="description" content="Dashma - A minimal, zen-inspired link dashboard">
+  <meta name="theme-color" content="#212121">
+  <title>Dashma</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1 class="site-title">Dashma</h1>
+    </header>
+
+    <main class="categories-grid cols-3">
+      <!-- Categories rendered by JavaScript -->
+    </main>
+  </div>
+
+  <!-- Search Overlay -->
+  <div class="search-overlay" role="dialog" aria-label="Search links">
+    <div class="search-container">
+      <input 
+        type="text" 
+        class="search-input" 
+        placeholder="Search links..." 
+        aria-label="Search links"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+      >
+      <div class="search-results" role="listbox"></div>
+      <div class="search-hint">Press ESC to close, arrow keys to navigate, Enter to open</div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

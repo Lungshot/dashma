@@ -1,0 +1,24 @@
+{
+  "name": "dashma",
+  "version": "1.0.0",
+  "description": "A minimal, zen-inspired link dashboard homepage",
+  "main": "src/server/index.js",
+  "scripts": {
+    "start": "node src/server/index.js",
+    "dev": "node --watch src/server/index.js"
+  },
+  "keywords": ["dashboard", "homepage", "links", "minimal"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "fastify": "^4.24.3",
+    "@fastify/static": "^6.12.0",
+    "@fastify/formbody": "^7.4.0",
+    "@fastify/cookie": "^9.2.0",
+    "@fastify/session": "^10.7.0",
+    "@fastify/multipart": "^8.0.0",
+    "bcryptjs": "^2.4.3",
+    "@azure/msal-node": "^2.6.0",
+    "uuid": "^9.0.1"
+  }
+}
