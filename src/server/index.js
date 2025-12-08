@@ -10,7 +10,7 @@ fastify.register(require('@fastify/cookie'));
 fastify.register(require('@fastify/session'), {
   secret: process.env.SESSION_SECRET || 'dashma-secret-change-in-production-min-32-chars',
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.COOKIE_SECURE === 'true', // Set COOKIE_SECURE=true if not behind a reverse proxy
     maxAge: 86400000 // 24 hours
   }
 });

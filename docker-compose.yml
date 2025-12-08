@@ -8,6 +8,9 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      # COOKIE_SECURE: Set to 'true' only if NOT behind a reverse proxy (direct HTTPS)
+      # Leave unset or 'false' when behind Caddy/nginx/Traefik that handles SSL
+      # - COOKIE_SECURE=true
       # Optional: Set a custom session secret for enhanced security
       # In Portainer, add this as an environment variable:
       # SESSION_SECRET=your-secure-random-string-minimum-32-characters
