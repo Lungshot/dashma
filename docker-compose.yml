@@ -8,6 +8,10 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      # Optional: Set a custom session secret for enhanced security
+      # In Portainer, add this as an environment variable:
+      # SESSION_SECRET=your-secure-random-string-minimum-32-characters
+      # - SESSION_SECRET=${SESSION_SECRET}
     volumes:
       - ./src/data:/app/src/data
       - ./src/public/uploads:/app/src/public/uploads
