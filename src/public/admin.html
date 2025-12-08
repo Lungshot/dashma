@@ -71,6 +71,26 @@
         </div>
 
         <div class="card">
+          <h3 class="card-title">Site Logo</h3>
+          <div class="form-group">
+            <label class="form-label">Logo Display</label>
+            <select class="form-select" id="siteLogoMode">
+              <option value="none">No Logo</option>
+              <option value="favicon">Use Site Favicon</option>
+              <option value="custom">Custom Logo</option>
+            </select>
+          </div>
+          <div class="form-group" id="customLogoUpload">
+            <div class="file-upload" id="logoImageUpload">
+              <input type="file" accept="image/*" id="logoImageInput">
+              <p class="file-upload-text">Click or drag to upload logo image</p>
+            </div>
+            <div class="preview-container" id="logoImagePreview"></div>
+            <button class="btn btn-sm btn-danger" id="clearLogoImage">Clear Logo</button>
+          </div>
+        </div>
+
+        <div class="card">
           <h3 class="card-title">Colors</h3>
           <div class="form-row">
             <div class="form-group">
@@ -210,8 +230,24 @@
                 <option value="glow">Glow</option>
                 <option value="scale">Scale</option>
                 <option value="color">Color Change</option>
+                <option value="underline">Underline</option>
+                <option value="slide">Slide</option>
+                <option value="hacked">Hacked (Matrix)</option>
+                <option value="glitch">Glitch</option>
+                <option value="neon">Neon Pulse</option>
+                <option value="blur">Blur In</option>
               </select>
             </div>
+            <div class="form-group">
+              <label class="form-label">Category Heading Size</label>
+              <select class="form-select" id="categoryHeadingSize">
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
             <div class="form-group">
               <label class="form-label">Nesting Animation</label>
               <select class="form-select" id="nestingAnimation">
@@ -219,6 +255,10 @@
                 <option value="fade">Fade</option>
                 <option value="zoom">Zoom</option>
                 <option value="blur">Blur</option>
+                <option value="flip">Flip</option>
+                <option value="bounce">Bounce</option>
+                <option value="rotate">Rotate</option>
+                <option value="swing">Swing</option>
               </select>
             </div>
           </div>
@@ -279,12 +319,23 @@
 
         <div class="card">
           <h3 class="card-title">Authentication Mode</h3>
-          <div class="form-group">
-            <select class="form-select" id="authMode">
-              <option value="none">No Authentication (Public)</option>
-              <option value="basic">Basic Authentication</option>
-              <option value="entraId">Microsoft Entra ID (SSO)</option>
-            </select>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Authentication Type</label>
+              <select class="form-select" id="authMode">
+                <option value="none">No Authentication (Public)</option>
+                <option value="basic">Basic Authentication</option>
+                <option value="entraId">Microsoft Entra ID (SSO)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Session Timeout</label>
+              <select class="form-select" id="sessionTimeout">
+                <option value="1800000">30 Minutes</option>
+                <option value="3600000">1 Hour</option>
+                <option value="21600000">6 Hours</option>
+              </select>
+            </div>
           </div>
         </div>
 

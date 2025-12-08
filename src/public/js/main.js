@@ -36,11 +36,29 @@
     // Apply title settings
     const header = document.querySelector('.header');
     const siteTitle = document.querySelector('.site-title');
+    const siteLogo = document.querySelector('.site-logo');
     siteTitle.textContent = s.siteName;
 
     // Title size
     siteTitle.className = 'site-title';
     siteTitle.classList.add(`size-${s.titleSize || 'large'}`);
+
+    // Site logo
+    if (s.siteLogoMode === 'favicon') {
+      // Use the first link's favicon or a default
+      const firstLink = appData.links && appData.links[0];
+      if (firstLink) {
+        siteLogo.src = `/api/favicon?url=${encodeURIComponent(firstLink.url)}`;
+        siteLogo.style.display = 'block';
+      } else {
+        siteLogo.style.display = 'none';
+      }
+    } else if (s.siteLogoMode === 'custom' && s.siteLogo) {
+      siteLogo.src = s.siteLogo;
+      siteLogo.style.display = 'block';
+    } else {
+      siteLogo.style.display = 'none';
+    }
 
     // Title alignment
     header.className = 'header';
@@ -77,6 +95,7 @@
 
       const isCollapsed = collapsedCategories.includes(category.id);
       const hoverClass = `cat-hover-${appData.settings.categoryHoverEffect}`;
+      const headingSizeClass = `size-${appData.settings.categoryHeadingSize || 'medium'}`;
 
       const categoryEl = document.createElement('div');
       categoryEl.className = `category ${hoverClass} ${isCollapsed ? 'collapsed' : ''}`;
@@ -85,7 +104,7 @@
 
       categoryEl.innerHTML = `
         <div class="category-header" tabindex="0" role="button" aria-expanded="${!isCollapsed}">
-          <h2 class="category-title">${escapeHtml(category.name)}</h2>
+          <h2 class="category-title ${headingSizeClass}">${escapeHtml(category.name)}</h2>
           <span class="category-toggle">▼</span>
         </div>
         <div class="category-links">
@@ -109,7 +128,10 @@
 
     // Setup hacked text effect listeners if enabled
     if (appData.settings.linkHoverEffect === 'hacked') {
-      setupHackedTextListeners();
+      setupHackedTextListeners('.hover-hacked .link-name');
+    }
+    if (appData.settings.categoryHoverEffect === 'hacked') {
+      setupHackedTextListeners('.cat-hover-hacked .category-title');
     }
   }
 
@@ -411,16 +433,16 @@
   }
 
   // Setup hacked text effect listeners
-  function setupHackedTextListeners() {
-    document.querySelectorAll('.hover-hacked .link-name').forEach(element => {
+  function setupHackedTextListeners(selector) {
+    document.querySelectorAll(selector).forEach(element => {
       // Store original text if not already stored
       if (!element.dataset.value) {
         element.dataset.value = element.innerText;
       }
 
-      const link = element.closest('.hover-hacked');
-      link.addEventListener('mouseenter', () => hackedTextEffect(element));
-      link.addEventListener('mouseleave', () => resetHackedText(element));
+      const parent = element.parentElement;
+      parent.addEventListener('mouseenter', () => hackedTextEffect(element));
+      parent.addEventListener('mouseleave', () => resetHackedText(element));
     });
   }
 

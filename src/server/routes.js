@@ -239,16 +239,40 @@ async function registerRoutes(fastify) {
 
       const filename = `icon-${Date.now()}${path.extname(data.filename)}`;
       const uploadPath = path.join(__dirname, '..', 'public', 'uploads', filename);
-      
+
       const writeStream = fs.createWriteStream(uploadPath);
       await data.file.pipe(writeStream);
-      
+
       await new Promise((resolve, reject) => {
         writeStream.on('finish', resolve);
         writeStream.on('error', reject);
       });
 
       return { success: true, url: `/uploads/${filename}` };
+    });
+
+    // Upload site logo
+    fastify.post('/api/admin/upload/logo', async (request, reply) => {
+      const data = await request.file();
+      if (!data) {
+        return reply.code(400).send({ error: 'No file uploaded' });
+      }
+
+      const filename = `logo-${Date.now()}${path.extname(data.filename)}`;
+      const uploadPath = path.join(__dirname, '..', 'public', 'uploads', filename);
+
+      const writeStream = fs.createWriteStream(uploadPath);
+      await data.file.pipe(writeStream);
+
+      await new Promise((resolve, reject) => {
+        writeStream.on('finish', resolve);
+        writeStream.on('error', reject);
+      });
+
+      const logoUrl = `/uploads/${filename}`;
+      config.updateSettings({ siteLogo: logoUrl });
+
+      return { success: true, url: logoUrl };
     });
 
     // Update admin credentials
