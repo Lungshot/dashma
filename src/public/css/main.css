@@ -41,6 +41,13 @@ body {
 
 .header.hidden { display: none; }
 
+.site-logo {
+  max-height: 60px;
+  max-width: 200px;
+  margin-bottom: 15px;
+  object-fit: contain;
+}
+
 .site-title {
   font-family: var(--title-font, 'Courier New', Courier, monospace);
   font-weight: 300;
@@ -406,6 +413,49 @@ body {
   color: var(--accent-color, #888888);
 }
 
+.cat-hover-underline:hover .category-title {
+  text-decoration: underline;
+}
+
+.cat-hover-slide:hover .category-title {
+  transform: translateX(5px);
+}
+
+.cat-hover-hacked .category-title {
+  transition: all 0.2s ease;
+}
+
+.cat-hover-glitch:hover .category-title {
+  animation: glitch 0.3s ease;
+}
+
+.cat-hover-neon:hover .category-title {
+  animation: neon-pulse 0.5s ease-in-out;
+  text-shadow: 0 0 5px var(--text-color, #ffffff),
+               0 0 10px var(--text-color, #ffffff),
+               0 0 20px var(--accent-color, #888888);
+}
+
+.cat-hover-blur:hover .category-title {
+  animation: blur-in 0.3s ease forwards;
+}
+
+/* Category Heading Sizes */
+.category-title.size-small {
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+}
+
+.category-title.size-medium {
+  font-size: 1.1rem;
+  letter-spacing: 0.15em;
+}
+
+.category-title.size-large {
+  font-size: 1.4rem;
+  letter-spacing: 0.2em;
+}
+
 /* Nesting Animations */
 .nest-slide .category-links {
   transform: translateY(-10px);
@@ -435,6 +485,49 @@ body {
 
 .nest-blur .category-links {
   transition: max-height 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
+}
+
+/* Flip animation */
+.nest-flip .category-links {
+  transform: rotateX(-90deg);
+  transform-origin: top center;
+  transition: max-height 0.4s ease, opacity 0.4s ease, transform 0.4s ease;
+}
+
+.nest-flip .category:not(.collapsed) .category-links {
+  transform: rotateX(0);
+}
+
+/* Bounce animation */
+.nest-bounce .category-links {
+  transform: translateY(-20px);
+  transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.nest-bounce .category:not(.collapsed) .category-links {
+  transform: translateY(0);
+}
+
+/* Rotate animation */
+.nest-rotate .category-links {
+  transform: rotate(-5deg) scale(0.95);
+  transform-origin: top left;
+  transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.4s ease;
+}
+
+.nest-rotate .category:not(.collapsed) .category-links {
+  transform: rotate(0) scale(1);
+}
+
+/* Swing animation */
+.nest-swing .category-links {
+  transform: perspective(400px) rotateY(-15deg);
+  transform-origin: left center;
+  transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.5s ease;
+}
+
+.nest-swing .category:not(.collapsed) .category-links {
+  transform: perspective(400px) rotateY(0);
 }
 
 /* Keyboard navigation indicator */

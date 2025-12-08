@@ -90,6 +90,8 @@ function getPublicSettings() {
     titleSize: config.settings.titleSize,
     titleAlignment: config.settings.titleAlignment,
     showTitle: config.settings.showTitle,
+    siteLogo: config.settings.siteLogo,
+    siteLogoMode: config.settings.siteLogoMode,
     backgroundColor: config.settings.backgroundColor,
     backgroundImage: config.settings.backgroundImage,
     fontFamily: config.settings.fontFamily,
@@ -103,6 +105,7 @@ function getPublicSettings() {
     showCategoryBackground: config.settings.showCategoryBackground,
     linkHoverEffect: config.settings.linkHoverEffect,
     categoryHoverEffect: config.settings.categoryHoverEffect,
+    categoryHeadingSize: config.settings.categoryHeadingSize,
     nestingAnimation: config.settings.nestingAnimation,
     authMode: config.settings.authMode
   };

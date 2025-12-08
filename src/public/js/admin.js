@@ -59,6 +59,11 @@
     setupFileUpload('bgImageUpload', 'bgImageInput', handleBgImageUpload);
     document.getElementById('clearBgImage').addEventListener('click', clearBgImage);
 
+    // Logo upload
+    setupFileUpload('logoImageUpload', 'logoImageInput', handleLogoImageUpload);
+    document.getElementById('clearLogoImage').addEventListener('click', clearLogoImage);
+    document.getElementById('siteLogoMode').addEventListener('change', toggleLogoUpload);
+
     // Categories
     document.getElementById('addCategoryBtn').addEventListener('click', () => openCategoryModal());
     document.getElementById('saveCategoryBtn').addEventListener('click', saveCategory);
@@ -155,6 +160,14 @@
     setSelectValue('titleAlignment', s.titleAlignment || 'center');
     document.getElementById('showTitle').checked = s.showTitle !== false;
 
+    // Site Logo
+    setSelectValue('siteLogoMode', s.siteLogoMode || 'none');
+    toggleLogoUpload();
+    if (s.siteLogo) {
+      document.getElementById('logoImagePreview').innerHTML =
+        `<img src="${s.siteLogo}" class="preview-image" alt="Logo" style="max-height: 60px;">`;
+    }
+
     // Colors
     document.getElementById('backgroundColor').value = s.backgroundColor || '#212121';
     document.getElementById('bgColorPicker').value = s.backgroundColor || '#212121';
@@ -183,10 +196,12 @@
     // Animations
     setSelectValue('linkHoverEffect', s.linkHoverEffect);
     setSelectValue('categoryHoverEffect', s.categoryHoverEffect);
+    setSelectValue('categoryHeadingSize', s.categoryHeadingSize || 'medium');
     setSelectValue('nestingAnimation', s.nestingAnimation);
 
     // Auth
     setSelectValue('authMode', s.authMode);
+    setSelectValue('sessionTimeout', s.sessionTimeout || '86400000');
     if (s.entraId) {
       document.getElementById('entraClientId').value = s.entraId.clientId || '';
       document.getElementById('entraTenantId').value = s.entraId.tenantId || '';
@@ -246,6 +261,7 @@
       titleSize: document.getElementById('titleSize').value,
       titleAlignment: document.getElementById('titleAlignment').value,
       showTitle: document.getElementById('showTitle').checked,
+      siteLogoMode: document.getElementById('siteLogoMode').value,
       backgroundColor: document.getElementById('backgroundColor').value,
       textColor: document.getElementById('textColor').value,
       accentColor: document.getElementById('accentColor').value,
@@ -258,6 +274,7 @@
       showCategoryBackground: document.getElementById('showCategoryBackground').checked,
       linkHoverEffect: document.getElementById('linkHoverEffect').value,
       categoryHoverEffect: document.getElementById('categoryHoverEffect').value,
+      categoryHeadingSize: document.getElementById('categoryHeadingSize').value,
       nestingAnimation: document.getElementById('nestingAnimation').value
     };
 
@@ -310,6 +327,51 @@
       showToast('Background image cleared');
     } catch (err) {
       showToast('Failed to clear image', true);
+    }
+  }
+
+  // Toggle logo upload visibility based on mode
+  function toggleLogoUpload() {
+    const mode = document.getElementById('siteLogoMode').value;
+    const uploadSection = document.getElementById('customLogoUpload');
+    uploadSection.style.display = mode === 'custom' ? 'block' : 'none';
+  }
+
+  // Handle logo image upload
+  async function handleLogoImageUpload(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/admin/upload/logo', {
+        method: 'POST',
+        body: formData
+      });
+      if (!response.ok) throw new Error('Upload failed');
+      const result = await response.json();
+
+      document.getElementById('logoImagePreview').innerHTML =
+        `<img src="${result.url}" class="preview-image" alt="Logo" style="max-height: 60px;">`;
+      appConfig.settings.siteLogo = result.url;
+      showToast('Logo image uploaded');
+    } catch (err) {
+      showToast('Failed to upload logo', true);
+    }
+  }
+
+  // Clear logo image
+  async function clearLogoImage() {
+    try {
+      await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siteLogo: null })
+      });
+      document.getElementById('logoImagePreview').innerHTML = '';
+      appConfig.settings.siteLogo = null;
+      showToast('Logo image cleared');
+    } catch (err) {
+      showToast('Failed to clear logo', true);
     }
   }
 
@@ -579,6 +641,7 @@
   async function saveAuth() {
     const settings = {
       authMode: document.getElementById('authMode').value,
+      sessionTimeout: parseInt(document.getElementById('sessionTimeout').value),
       entraId: {
         clientId: document.getElementById('entraClientId').value,
         tenantId: document.getElementById('entraTenantId').value,
