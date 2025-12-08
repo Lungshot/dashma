@@ -89,6 +89,8 @@ function getPublicSettings() {
     siteName: config.settings.siteName,
     titleSize: config.settings.titleSize,
     titleAlignment: config.settings.titleAlignment,
+    titleHoverEffect: config.settings.titleHoverEffect,
+    titleLinkUrl: config.settings.titleLinkUrl,
     showTitle: config.settings.showTitle,
     siteLogo: config.settings.siteLogo,
     siteLogoMode: config.settings.siteLogoMode,
@@ -103,10 +105,16 @@ function getPublicSettings() {
     linkOpenBehavior: config.settings.linkOpenBehavior,
     showLinkIcons: config.settings.showLinkIcons,
     showCategoryBackground: config.settings.showCategoryBackground,
+    showCategoryArrow: config.settings.showCategoryArrow,
     linkHoverEffect: config.settings.linkHoverEffect,
     categoryHoverEffect: config.settings.categoryHoverEffect,
     categoryHeadingSize: config.settings.categoryHeadingSize,
     nestingAnimation: config.settings.nestingAnimation,
+    showFooter: config.settings.showFooter,
+    footerText: config.settings.footerText,
+    footerSize: config.settings.footerSize,
+    footerAlignment: config.settings.footerAlignment,
+    footerHoverEffect: config.settings.footerHoverEffect,
     authMode: config.settings.authMode
   };
 }

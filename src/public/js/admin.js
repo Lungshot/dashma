@@ -158,6 +158,8 @@
     document.getElementById('siteName').value = s.siteName || 'Dashma';
     setSelectValue('titleSize', s.titleSize || 'large');
     setSelectValue('titleAlignment', s.titleAlignment || 'center');
+    setSelectValue('titleHoverEffect', s.titleHoverEffect || 'none');
+    document.getElementById('titleLinkUrl').value = s.titleLinkUrl || '';
     document.getElementById('showTitle').checked = s.showTitle !== false;
 
     // Site Logo
@@ -198,6 +200,14 @@
     setSelectValue('categoryHoverEffect', s.categoryHoverEffect);
     setSelectValue('categoryHeadingSize', s.categoryHeadingSize || 'medium');
     setSelectValue('nestingAnimation', s.nestingAnimation);
+    document.getElementById('showCategoryArrow').checked = s.showCategoryArrow !== false;
+
+    // Footer
+    document.getElementById('showFooter').checked = s.showFooter === true;
+    document.getElementById('footerText').value = s.footerText || '';
+    setSelectValue('footerSize', s.footerSize || 'small');
+    setSelectValue('footerAlignment', s.footerAlignment || 'center');
+    setSelectValue('footerHoverEffect', s.footerHoverEffect || 'none');
 
     // Auth
     setSelectValue('authMode', s.authMode);
@@ -260,6 +270,8 @@
       siteName: document.getElementById('siteName').value,
       titleSize: document.getElementById('titleSize').value,
       titleAlignment: document.getElementById('titleAlignment').value,
+      titleHoverEffect: document.getElementById('titleHoverEffect').value,
+      titleLinkUrl: document.getElementById('titleLinkUrl').value.trim() || null,
       showTitle: document.getElementById('showTitle').checked,
       siteLogoMode: document.getElementById('siteLogoMode').value,
       backgroundColor: document.getElementById('backgroundColor').value,
@@ -275,7 +287,13 @@
       linkHoverEffect: document.getElementById('linkHoverEffect').value,
       categoryHoverEffect: document.getElementById('categoryHoverEffect').value,
       categoryHeadingSize: document.getElementById('categoryHeadingSize').value,
-      nestingAnimation: document.getElementById('nestingAnimation').value
+      nestingAnimation: document.getElementById('nestingAnimation').value,
+      showCategoryArrow: document.getElementById('showCategoryArrow').checked,
+      showFooter: document.getElementById('showFooter').checked,
+      footerText: document.getElementById('footerText').value.trim(),
+      footerSize: document.getElementById('footerSize').value,
+      footerAlignment: document.getElementById('footerAlignment').value,
+      footerHoverEffect: document.getElementById('footerHoverEffect').value
     };
 
     try {

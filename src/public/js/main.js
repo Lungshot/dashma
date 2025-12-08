@@ -35,13 +35,16 @@
 
     // Apply title settings
     const header = document.querySelector('.header');
-    const siteTitle = document.querySelector('.site-title');
+    const titleWrapper = document.querySelector('.title-wrapper');
     const siteLogo = document.querySelector('.site-logo');
-    siteTitle.textContent = s.siteName;
 
-    // Title size
-    siteTitle.className = 'site-title';
-    siteTitle.classList.add(`size-${s.titleSize || 'large'}`);
+    // Build title element with optional link
+    const titleHoverClass = s.titleHoverEffect && s.titleHoverEffect !== 'none' ? `title-hover-${s.titleHoverEffect}` : '';
+    if (s.titleLinkUrl) {
+      titleWrapper.innerHTML = `<a href="${escapeHtml(s.titleLinkUrl)}" class="site-title-link ${titleHoverClass}"><h1 class="site-title size-${s.titleSize || 'large'}">${escapeHtml(s.siteName)}</h1></a>`;
+    } else {
+      titleWrapper.innerHTML = `<h1 class="site-title ${titleHoverClass} size-${s.titleSize || 'large'}">${escapeHtml(s.siteName)}</h1>`;
+    }
 
     // Site logo
     if (s.siteLogoMode === 'favicon') {
@@ -79,6 +82,33 @@
     } else {
       document.body.classList.remove('compact-mode');
     }
+
+    // Apply footer settings
+    const footer = document.querySelector('.site-footer');
+    const footerText = document.querySelector('.footer-text');
+    if (s.showFooter && s.footerText) {
+      footerText.textContent = s.footerText;
+      footer.className = `site-footer align-${s.footerAlignment || 'center'} size-${s.footerSize || 'small'}`;
+      if (s.footerHoverEffect && s.footerHoverEffect !== 'none') {
+        footer.classList.add(`footer-hover-${s.footerHoverEffect}`);
+      }
+      footer.style.display = 'block';
+    } else {
+      footer.style.display = 'none';
+    }
+
+    // Setup hacked text effect for title if enabled
+    if (s.titleHoverEffect === 'hacked') {
+      const titleEl = document.querySelector('.site-title');
+      if (titleEl && !titleEl.dataset.value) {
+        titleEl.dataset.value = titleEl.innerText;
+      }
+      const titleParent = titleEl?.parentElement;
+      if (titleParent) {
+        titleParent.addEventListener('mouseenter', () => hackedTextEffect(titleEl));
+        titleParent.addEventListener('mouseleave', () => resetHackedText(titleEl));
+      }
+    }
   }
 
   // Render categories and links
@@ -96,6 +126,7 @@
       const isCollapsed = collapsedCategories.includes(category.id);
       const hoverClass = `cat-hover-${appData.settings.categoryHoverEffect}`;
       const headingSizeClass = `size-${appData.settings.categoryHeadingSize || 'medium'}`;
+      const showArrow = appData.settings.showCategoryArrow !== false;
 
       const categoryEl = document.createElement('div');
       categoryEl.className = `category ${hoverClass} ${isCollapsed ? 'collapsed' : ''}`;
@@ -104,8 +135,8 @@
 
       categoryEl.innerHTML = `
         <div class="category-header" tabindex="0" role="button" aria-expanded="${!isCollapsed}">
+          ${showArrow ? '<span class="category-toggle">▼</span>' : ''}
           <h2 class="category-title ${headingSizeClass}">${escapeHtml(category.name)}</h2>
-          <span class="category-toggle">▼</span>
         </div>
         <div class="category-links">
           ${categoryLinks.map(link => renderLink(link)).join('')}
