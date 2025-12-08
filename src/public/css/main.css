@@ -185,6 +185,7 @@ body {
   padding-bottom: 15px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 15px;
+  transition: margin-bottom 0.3s ease, padding-bottom 0.3s ease, border-bottom 0.3s ease;
 }
 
 .category-title {
@@ -205,6 +206,12 @@ body {
 
 .category.collapsed .category-toggle {
   transform: rotate(-90deg);
+}
+
+.category.collapsed .category-header {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .category-links {
