@@ -64,7 +64,10 @@
     document.getElementById('saveCategoryBtn').addEventListener('click', saveCategory);
 
     // Links
-    document.getElementById('addLinkBtn').addEventListener('click', () => openLinkModal());
+    document.getElementById('addLinkBtn').addEventListener('click', () => {
+      const filterCategory = document.getElementById('linkCategoryFilter').value;
+      openLinkModal(null, filterCategory);
+    });
     document.getElementById('saveLinkBtn').addEventListener('click', saveLink);
     document.getElementById('linkCategoryFilter').addEventListener('change', renderLinks);
 
@@ -451,7 +454,7 @@
   }
 
   // Open link modal
-  window.openLinkModal = function(linkId = null) {
+  window.openLinkModal = function(linkId = null, preselectedCategoryId = null) {
     const modal = document.getElementById('linkModal');
     const title = document.getElementById('linkModalTitle');
 
@@ -470,7 +473,9 @@
       document.getElementById('linkId').value = '';
       document.getElementById('linkName').value = '';
       document.getElementById('linkUrl').value = '';
-      document.getElementById('linkCategory').value = appConfig.categories[0]?.id || '';
+      // Use preselected category if provided, otherwise default to first category
+      const defaultCategory = preselectedCategoryId || appConfig.categories[0]?.id || '';
+      document.getElementById('linkCategory').value = defaultCategory;
       document.getElementById('linkTags').value = '';
       document.getElementById('linkCustomIcon').value = '';
       document.getElementById('linkOpenBehaviorModal').value = '';
