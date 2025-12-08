@@ -78,6 +78,56 @@ body {
   letter-spacing: 0.35em;
 }
 
+/* Title link */
+.site-title-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Title hover effects */
+.title-hover-glow:hover .site-title,
+.site-title.title-hover-glow:hover {
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.title-hover-fade:hover .site-title,
+.site-title.title-hover-fade:hover {
+  opacity: 0.7;
+}
+
+.title-hover-scale:hover .site-title,
+.site-title.title-hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.title-hover-underline:hover .site-title,
+.site-title.title-hover-underline:hover {
+  text-decoration: underline;
+}
+
+.title-hover-hacked .site-title,
+.site-title.title-hover-hacked {
+  transition: all 0.2s ease;
+}
+
+.title-hover-glitch:hover .site-title,
+.site-title.title-hover-glitch:hover {
+  animation: glitch 0.3s ease;
+}
+
+.title-hover-neon:hover .site-title,
+.site-title.title-hover-neon:hover {
+  animation: neon-pulse 0.5s ease-in-out;
+  text-shadow: 0 0 5px var(--text-color, #ffffff),
+               0 0 10px var(--text-color, #ffffff),
+               0 0 20px var(--accent-color, #888888);
+}
+
+.title-hover-blur:hover .site-title,
+.site-title.title-hover-blur:hover {
+  animation: blur-in 0.3s ease forwards;
+}
+
 /* Search */
 .search-overlay {
   position: fixed;
@@ -212,7 +262,8 @@ body {
 .category-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 8px;
   cursor: pointer;
   padding-bottom: 15px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -614,4 +665,45 @@ body {
   .category-header {
     min-height: 44px;
   }
+}
+
+/* Footer */
+.site-footer {
+  margin-top: 40px;
+  padding: 20px;
+  color: var(--text-color, #ffffff);
+  opacity: 0.7;
+  transition: all 0.2s ease;
+}
+
+.site-footer.align-left { text-align: left; }
+.site-footer.align-center { text-align: center; }
+.site-footer.align-right { text-align: right; }
+
+.site-footer.size-small .footer-text { font-size: 0.75rem; }
+.site-footer.size-medium .footer-text { font-size: 0.9rem; }
+.site-footer.size-large .footer-text { font-size: 1.1rem; }
+
+/* Footer hover effects */
+.footer-hover-glow:hover {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.footer-hover-fade:hover {
+  opacity: 0.5;
+}
+
+.footer-hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.footer-hover-neon:hover {
+  animation: neon-pulse 0.5s ease-in-out;
+  text-shadow: 0 0 5px var(--text-color, #ffffff),
+               0 0 10px var(--text-color, #ffffff),
+               0 0 20px var(--accent-color, #888888);
+}
+
+.footer-hover-blur:hover {
+  animation: blur-in 0.3s ease forwards;
 }
