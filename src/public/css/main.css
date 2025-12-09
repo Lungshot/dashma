@@ -69,7 +69,7 @@ body {
   align-items: center;
 }
 
-/* Logo alignment */
+/* Logo alignment - for above/below positions */
 .header-content.logo-align-left {
   align-items: flex-start;
 }
@@ -82,7 +82,11 @@ body {
   align-items: flex-end;
 }
 
-/* Inline positioning is controlled by parent .header text-align */
+/* Inline mode: keep vertical centering regardless of alignment */
+.header-content.logo-inline.logo-align-left,
+.header-content.logo-inline.logo-align-right {
+  align-items: center;
+}
 
 .site-logo {
   max-height: 60px;
