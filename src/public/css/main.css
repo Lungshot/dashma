@@ -302,32 +302,57 @@ body {
   margin-top: 20px;
 }
 
-/* Categories Grid - Using CSS Columns for vertical reflow when collapsing */
+/* Categories Grid - Using flexbox columns for fixed column assignment */
 .categories-grid {
-  column-gap: 30px;
+  display: flex;
+  gap: 30px;
 }
 
-.categories-grid.cols-1 { column-count: 1; }
-.categories-grid.cols-2 { column-count: 2; }
-.categories-grid.cols-3 { column-count: 3; }
-.categories-grid.cols-4 { column-count: 4; }
-.categories-grid.cols-5 { column-count: 5; }
-.categories-grid.cols-6 { column-count: 6; }
+/* Category columns - each column is a flex container for vertical stacking */
+.category-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  min-width: 0; /* Prevent flex items from overflowing */
+}
+
+.categories-grid.cols-1 .category-column { flex: 0 0 100%; }
+.categories-grid.cols-2 .category-column { flex: 0 0 calc(50% - 15px); }
+.categories-grid.cols-3 .category-column { flex: 0 0 calc(33.333% - 20px); }
+.categories-grid.cols-4 .category-column { flex: 0 0 calc(25% - 22.5px); }
+.categories-grid.cols-5 .category-column { flex: 0 0 calc(20% - 24px); }
+.categories-grid.cols-6 .category-column { flex: 0 0 calc(16.666% - 25px); }
 
 @media (max-width: 1200px) {
   .categories-grid.cols-5,
-  .categories-grid.cols-6 { column-count: 3; }
+  .categories-grid.cols-6 {
+    flex-wrap: wrap;
+  }
+  .categories-grid.cols-5 .category-column,
+  .categories-grid.cols-6 .category-column { flex: 0 0 calc(33.333% - 20px); }
 }
 
 @media (max-width: 900px) {
   .categories-grid.cols-3,
   .categories-grid.cols-4,
   .categories-grid.cols-5,
-  .categories-grid.cols-6 { column-count: 2; }
+  .categories-grid.cols-6 {
+    flex-wrap: wrap;
+  }
+  .categories-grid.cols-3 .category-column,
+  .categories-grid.cols-4 .category-column,
+  .categories-grid.cols-5 .category-column,
+  .categories-grid.cols-6 .category-column { flex: 0 0 calc(50% - 15px); }
 }
 
 @media (max-width: 600px) {
-  .categories-grid { column-count: 1 !important; }
+  .categories-grid {
+    flex-direction: column;
+  }
+  .categories-grid .category-column {
+    flex: 0 0 100% !important;
+  }
 }
 
 /* Category */
@@ -336,8 +361,6 @@ body {
   border-radius: 12px;
   padding: 20px;
   transition: background 0.2s ease;
-  break-inside: avoid; /* Prevent category from being split across columns */
-  margin-bottom: 30px; /* Vertical spacing between categories */
 }
 
 .category-header {
@@ -707,8 +730,12 @@ body {
   padding: 4px 0;
 }
 
-.compact-mode .category {
-  margin-bottom: 10px;
+.compact-mode .categories-grid {
+  gap: 10px;
+}
+
+.compact-mode .category-column {
+  gap: 10px;
 }
 
 /* Mobile adjustments */
