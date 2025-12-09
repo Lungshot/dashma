@@ -3,3 +3,4 @@ node_modules/
 *.log
 src/public/uploads/*
 !src/public/uploads/.gitkeep
+data/sessions/
