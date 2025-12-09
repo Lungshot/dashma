@@ -94,6 +94,7 @@ function getPublicSettings() {
     titleHoverEffect: config.settings.titleHoverEffect,
     titleLinkUrl: config.settings.titleLinkUrl,
     showTitle: config.settings.showTitle,
+    showLogo: config.settings.showLogo,
     siteLogo: config.settings.siteLogo,
     siteLogoMode: config.settings.siteLogoMode,
     logoPosition: config.settings.logoPosition,

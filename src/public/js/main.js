@@ -50,9 +50,10 @@
     // Site logo
     const logoPosition = s.logoPosition || 'above';
     const logoAlignment = s.logoAlignment || 'center';
+    const showLogo = s.showLogo !== false;
     let logoVisible = false;
 
-    if (s.siteLogoMode === 'favicon') {
+    if (showLogo && s.siteLogoMode === 'favicon') {
       const firstLink = appData.links && appData.links[0];
       if (firstLink) {
         siteLogo.src = `/api/favicon?url=${encodeURIComponent(firstLink.url)}`;
@@ -61,7 +62,7 @@
       } else {
         siteLogo.style.display = 'none';
       }
-    } else if (s.siteLogoMode === 'custom' && s.siteLogo) {
+    } else if (showLogo && s.siteLogoMode === 'custom' && s.siteLogo) {
       siteLogo.src = s.siteLogo;
       siteLogo.style.display = 'block';
       logoVisible = true;
@@ -90,8 +91,16 @@
     header.className = 'header';
     header.classList.add(`align-${s.titleAlignment || 'center'}`);
 
-    // Show/hide title
-    if (s.showTitle === false) {
+    // Show/hide title text (not the whole header)
+    const titleEl = titleWrapper.querySelector('.site-title');
+    if (titleEl && s.showTitle === false) {
+      titleWrapper.style.display = 'none';
+    } else {
+      titleWrapper.style.display = '';
+    }
+
+    // Hide header only if both title and logo are hidden
+    if (s.showTitle === false && !logoVisible) {
       header.classList.add('hidden');
     }
 
