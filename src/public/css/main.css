@@ -63,9 +63,9 @@ body {
 }
 
 .header-content.logo-inline {
+  display: inline-flex;
   flex-direction: row;
   gap: 20px;
-  justify-content: center;
   align-items: center;
 }
 
@@ -82,18 +82,7 @@ body {
   align-items: flex-end;
 }
 
-/* Inline + alignment combinations */
-.header-content.logo-inline.logo-align-left {
-  justify-content: flex-start;
-}
-
-.header-content.logo-inline.logo-align-center {
-  justify-content: center;
-}
-
-.header-content.logo-inline.logo-align-right {
-  justify-content: flex-end;
-}
+/* Inline positioning is controlled by parent .header text-align */
 
 .site-logo {
   max-height: 60px;
