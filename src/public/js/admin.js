@@ -191,6 +191,7 @@
     // Site Logo
     document.getElementById('showLogo').checked = s.showLogo !== false;
     setSelectValue('siteLogoMode', s.siteLogoMode || 'none');
+    setSelectValue('logoSize', s.logoSize || 'medium');
     setSelectValue('logoPosition', s.logoPosition || 'above');
     setSelectValue('logoAlignment', s.logoAlignment || 'center');
     toggleLogoUpload();
@@ -315,6 +316,7 @@
       showTitle: document.getElementById('showTitle').checked,
       showLogo: document.getElementById('showLogo').checked,
       siteLogoMode: document.getElementById('siteLogoMode').value,
+      logoSize: document.getElementById('logoSize').value,
       logoPosition: document.getElementById('logoPosition').value,
       logoAlignment: document.getElementById('logoAlignment').value,
       backgroundColor: document.getElementById('backgroundColor').value,
