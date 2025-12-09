@@ -329,6 +329,44 @@
       }
       return;
     }
+
+    // "e" to expand all categories
+    if (e.key === 'e' || e.key === 'E') {
+      e.preventDefault();
+      expandAllCategories();
+      return;
+    }
+
+    // "c" to collapse all categories
+    if (e.key === 'c' || e.key === 'C') {
+      e.preventDefault();
+      collapseAllCategories();
+      return;
+    }
+  }
+
+  // Expand all categories
+  function expandAllCategories() {
+    document.querySelectorAll('.category.collapsed').forEach(category => {
+      category.classList.remove('collapsed');
+      const header = category.querySelector('.category-header');
+      if (header) header.setAttribute('aria-expanded', 'true');
+    });
+    collapsedCategories = [];
+    localStorage.setItem('dashma-collapsed', JSON.stringify(collapsedCategories));
+  }
+
+  // Collapse all categories
+  function collapseAllCategories() {
+    const allCategoryIds = [];
+    document.querySelectorAll('.category').forEach(category => {
+      category.classList.add('collapsed');
+      const header = category.querySelector('.category-header');
+      if (header) header.setAttribute('aria-expanded', 'false');
+      allCategoryIds.push(category.dataset.categoryId);
+    });
+    collapsedCategories = allCategoryIds;
+    localStorage.setItem('dashma-collapsed', JSON.stringify(collapsedCategories));
   }
 
   // Open search overlay
