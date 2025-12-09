@@ -69,18 +69,21 @@ function requireAuth(request, reply, done) {
 
 function requireMainAuth(request, reply, done) {
   const settings = config.getConfig().settings;
-  
-  if (settings.authMode === 'none') {
+
+  // No auth required for main site
+  if (!settings.mainAuthMode || settings.mainAuthMode === 'none') {
     done();
     return;
   }
-  
-  if (settings.mainPageAuth && (!request.session || !request.session.authenticated)) {
-    reply.redirect('/admin/login?redirect=/');
+
+  // Check if user is authenticated (either as admin or regular user)
+  if (request.session && (request.session.authenticated || request.session.userAuthenticated)) {
+    done();
     return;
   }
-  
-  done();
+
+  // Redirect to login with main=1 param to indicate main site auth
+  reply.redirect('/login?redirect=/');
 }
 
 module.exports = {
