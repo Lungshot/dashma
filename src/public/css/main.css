@@ -43,6 +43,11 @@ body {
 
 /* Header content - logo positioning */
 .header-content {
+  display: block; /* Default to block so text-align from .header works */
+}
+
+/* When logo classes are applied, switch to flex */
+.header-content[class*="logo-"] {
   display: flex;
   flex-direction: column;
   align-items: center;
