@@ -76,8 +76,11 @@
       headerContent.classList.add(`logo-align-${logoAlignment}`);
     }
 
-    // Reorder elements based on position
-    if (logoPosition === 'below') {
+    // Reorder elements based on position and alignment
+    // For inline + right: logo goes after title (on the right side)
+    // For below: logo goes after title
+    // Otherwise: logo goes before title
+    if (logoPosition === 'below' || (logoPosition === 'inline' && logoAlignment === 'right')) {
       headerContent.appendChild(siteLogo);
     } else {
       headerContent.insertBefore(siteLogo, titleWrapper);
