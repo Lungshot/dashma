@@ -107,10 +107,16 @@ body {
   margin-bottom: 0;
 }
 
+/* Remove title margin when inline for proper vertical centering */
+.header-content.logo-inline .site-title {
+  margin-bottom: 0;
+}
+
 /* Title wrapper for better positioning */
 .title-wrapper {
   display: flex;
   flex-direction: column;
+  justify-content: center; /* Center content vertically when inline */
 }
 
 .site-title {
