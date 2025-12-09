@@ -29,6 +29,87 @@ async function registerRoutes(fastify) {
     }
   });
 
+  // User login page (for main site auth)
+  fastify.get('/login', async (request, reply) => {
+    const settings = config.getConfig().settings;
+    // If main auth is disabled, redirect to main page
+    if (!settings.mainAuthMode || settings.mainAuthMode === 'none') {
+      return reply.redirect('/');
+    }
+    return reply.sendFile('login.html');
+  });
+
+  // User login POST (for main site auth)
+  fastify.post('/login', async (request, reply) => {
+    const { username, password } = request.body;
+    const settings = config.getConfig().settings;
+    const redirect = request.query.redirect || '/';
+
+    if (settings.mainAuthMode === 'basic') {
+      // Try regular user first
+      const user = config.verifyUser(username, password);
+      if (user) {
+        request.session.userAuthenticated = true;
+        request.session.userId = user.id;
+        request.session.username = user.username;
+        return reply.redirect(redirect);
+      }
+
+      // Also allow admin to log in to main site
+      if (config.verifyAdmin(username, password)) {
+        request.session.authenticated = true;
+        request.session.username = username;
+        return reply.redirect(redirect);
+      }
+    }
+
+    return reply.redirect(`/login?error=1&redirect=${encodeURIComponent(redirect)}`);
+  });
+
+  // User logout
+  fastify.get('/logout', async (request, reply) => {
+    request.session.destroy();
+    return reply.redirect('/');
+  });
+
+  // EntraID login for main site
+  fastify.get('/login/entra', async (request, reply) => {
+    const settings = config.getConfig().settings;
+    if (settings.mainAuthMode !== 'entraId') {
+      return reply.redirect('/login');
+    }
+
+    const redirect = request.query.redirect || '/';
+    const redirectUri = settings.entraId.redirectUri || `${request.protocol}://${request.hostname}/callback`;
+    const authUrl = await auth.getAuthUrl(redirectUri);
+
+    if (authUrl) {
+      // Store redirect in session for callback
+      request.session.loginRedirect = redirect;
+      return reply.redirect(authUrl);
+    }
+    return reply.redirect('/login?error=entra');
+  });
+
+  // EntraID callback for main site
+  fastify.get('/callback', async (request, reply) => {
+    const { code } = request.query;
+    const settings = config.getConfig().settings;
+    const redirectUri = settings.entraId.redirectUri || `${request.protocol}://${request.hostname}/callback`;
+
+    const result = await auth.handleCallback(code, redirectUri);
+    if (result) {
+      request.session.userAuthenticated = true;
+      request.session.username = result.account.username;
+      request.session.entraUser = true;
+      const redirect = request.session.loginRedirect || '/';
+      delete request.session.loginRedirect;
+      return reply.redirect(redirect);
+    }
+
+    return reply.redirect('/login?error=entra');
+  });
+
   // Admin login page
   fastify.get('/admin/login', async (request, reply) => {
     return reply.sendFile('admin-login.html');
@@ -279,6 +360,42 @@ async function registerRoutes(fastify) {
     fastify.put('/api/admin/credentials', async (request) => {
       const { username, password } = request.body;
       config.updateAdminCredentials(username, password);
+      return { success: true };
+    });
+
+    // User management
+    fastify.get('/api/admin/users', async () => {
+      const users = config.getUsers();
+      // Return users without password hashes
+      return users.map(u => ({ id: u.id, username: u.username, createdAt: u.createdAt }));
+    });
+
+    fastify.post('/api/admin/users', async (request, reply) => {
+      const { username, password } = request.body;
+      if (!username || !password) {
+        return reply.code(400).send({ error: 'Username and password required' });
+      }
+      if (password.length < 4) {
+        return reply.code(400).send({ error: 'Password must be at least 4 characters' });
+      }
+      try {
+        return config.addUser(username, password);
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
+    });
+
+    fastify.put('/api/admin/users/:id', async (request, reply) => {
+      const { username, password } = request.body;
+      try {
+        return config.updateUser(request.params.id, { username, password });
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
+    });
+
+    fastify.delete('/api/admin/users/:id', async (request) => {
+      config.deleteUser(request.params.id);
       return { success: true };
     });
   });

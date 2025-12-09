@@ -4,14 +4,18 @@
 
   let appConfig = null;
 
+  let users = [];
+
   // Initialize
   async function init() {
     await loadConfig();
+    await loadUsers();
     setupNavigation();
     setupEventListeners();
     populateForm();
     renderCategories();
     renderLinks();
+    renderUsers();
   }
 
   // Load configuration from API
@@ -23,6 +27,18 @@
     } catch (err) {
       showToast('Failed to load configuration', true);
       console.error(err);
+    }
+  }
+
+  // Load users
+  async function loadUsers() {
+    try {
+      const response = await fetch('/api/admin/users');
+      if (!response.ok) throw new Error('Failed to load users');
+      users = await response.json();
+    } catch (err) {
+      console.error('Failed to load users:', err);
+      users = [];
     }
   }
 
@@ -40,6 +56,8 @@
 
         if (panel === 'auth') {
           toggleEntraSettings();
+          toggleUserManagement();
+          renderUsers();
         }
       });
     });
@@ -78,7 +96,15 @@
 
     // Auth
     document.getElementById('authMode').addEventListener('change', toggleEntraSettings);
+    document.getElementById('mainAuthMode').addEventListener('change', () => {
+      toggleEntraSettings();
+      toggleUserManagement();
+    });
     document.getElementById('saveAuth').addEventListener('click', saveAuth);
+
+    // Users
+    document.getElementById('addUserBtn').addEventListener('click', () => openUserModal());
+    document.getElementById('saveUserBtn').addEventListener('click', saveUser);
 
     // Backup
     document.getElementById('exportConfig').addEventListener('click', exportConfig);
@@ -164,6 +190,8 @@
 
     // Site Logo
     setSelectValue('siteLogoMode', s.siteLogoMode || 'none');
+    setSelectValue('logoPosition', s.logoPosition || 'above');
+    setSelectValue('logoAlignment', s.logoAlignment || 'center');
     toggleLogoUpload();
     if (s.siteLogo) {
       document.getElementById('logoImagePreview').innerHTML =
@@ -210,8 +238,8 @@
     setSelectValue('footerHoverEffect', s.footerHoverEffect || 'none');
 
     // Auth
-    setSelectValue('authMode', s.authMode);
-    setSelectValue('sessionTimeout', s.sessionTimeout || '86400000');
+    setSelectValue('authMode', s.authMode || 'basic');
+    setSelectValue('mainAuthMode', s.mainAuthMode || 'none');
     if (s.entraId) {
       document.getElementById('entraClientId').value = s.entraId.clientId || '';
       document.getElementById('entraTenantId').value = s.entraId.tenantId || '';
@@ -219,6 +247,7 @@
       document.getElementById('entraRedirectUri').value = s.entraId.redirectUri || '';
     }
     toggleEntraSettings();
+    toggleUserManagement();
 
     // Account
     document.getElementById('adminUsername').value = appConfig.admin.username || 'admin';
@@ -260,8 +289,18 @@
   // Toggle EntraID settings visibility
   function toggleEntraSettings() {
     const authMode = document.getElementById('authMode').value;
+    const mainAuthMode = document.getElementById('mainAuthMode').value;
     const entraSettings = document.getElementById('entraIdSettings');
-    entraSettings.style.display = authMode === 'entraId' ? 'block' : 'none';
+    // Show EntraID settings if either admin or main site uses EntraID
+    entraSettings.style.display = (authMode === 'entraId' || mainAuthMode === 'entraId') ? 'block' : 'none';
+  }
+
+  // Toggle user management visibility
+  function toggleUserManagement() {
+    const mainAuthMode = document.getElementById('mainAuthMode').value;
+    const userManagementCard = document.getElementById('userManagementCard');
+    // Show user management only when main site uses basic auth
+    userManagementCard.style.display = mainAuthMode === 'basic' ? 'block' : 'none';
   }
 
   // Save appearance settings
@@ -274,6 +313,8 @@
       titleLinkUrl: document.getElementById('titleLinkUrl').value.trim() || null,
       showTitle: document.getElementById('showTitle').checked,
       siteLogoMode: document.getElementById('siteLogoMode').value,
+      logoPosition: document.getElementById('logoPosition').value,
+      logoAlignment: document.getElementById('logoAlignment').value,
       backgroundColor: document.getElementById('backgroundColor').value,
       textColor: document.getElementById('textColor').value,
       accentColor: document.getElementById('accentColor').value,
@@ -659,7 +700,7 @@
   async function saveAuth() {
     const settings = {
       authMode: document.getElementById('authMode').value,
-      sessionTimeout: parseInt(document.getElementById('sessionTimeout').value),
+      mainAuthMode: document.getElementById('mainAuthMode').value,
       entraId: {
         clientId: document.getElementById('entraClientId').value,
         tenantId: document.getElementById('entraTenantId').value,
@@ -758,6 +799,146 @@
       showToast('Failed to update credentials', true);
     }
   }
+
+  // Render users list
+  function renderUsers() {
+    const list = document.getElementById('userList');
+
+    if (users.length === 0) {
+      list.innerHTML = '<li class="text-muted text-center">No users yet. Add users to allow access to the main site.</li>';
+      return;
+    }
+
+    list.innerHTML = users.map(user => {
+      const createdDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '';
+      return `
+        <li class="item-list-item" data-id="${user.id}">
+          <div class="item-info">
+            <div class="item-name">${escapeHtml(user.username)}</div>
+            <div class="item-meta">Created: ${createdDate}</div>
+          </div>
+          <div class="item-actions">
+            <button class="btn btn-sm" onclick="editUser('${user.id}')">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}')">Delete</button>
+          </div>
+        </li>
+      `;
+    }).join('');
+  }
+
+  // Open user modal
+  window.openUserModal = function(userId = null) {
+    const modal = document.getElementById('userModal');
+    const title = document.getElementById('userModalTitle');
+    const usernameInput = document.getElementById('newUsername');
+    const passwordInput = document.getElementById('newUserPassword');
+    const confirmInput = document.getElementById('newUserPasswordConfirm');
+    const idInput = document.getElementById('userId');
+
+    if (userId) {
+      const user = users.find(u => u.id === userId);
+      title.textContent = 'Edit User';
+      usernameInput.value = user ? user.username : '';
+      passwordInput.value = '';
+      confirmInput.value = '';
+      passwordInput.placeholder = 'Leave blank to keep current';
+      idInput.value = userId;
+    } else {
+      title.textContent = 'Add User';
+      usernameInput.value = '';
+      passwordInput.value = '';
+      confirmInput.value = '';
+      passwordInput.placeholder = 'Enter password';
+      idInput.value = '';
+    }
+
+    modal.classList.add('active');
+    usernameInput.focus();
+  };
+
+  window.editUser = function(id) {
+    openUserModal(id);
+  };
+
+  // Save user
+  async function saveUser() {
+    const id = document.getElementById('userId').value;
+    const username = document.getElementById('newUsername').value.trim();
+    const password = document.getElementById('newUserPassword').value;
+    const confirmPassword = document.getElementById('newUserPasswordConfirm').value;
+
+    if (!username) {
+      showToast('Username is required', true);
+      return;
+    }
+
+    if (!id && !password) {
+      showToast('Password is required for new users', true);
+      return;
+    }
+
+    if (password && password !== confirmPassword) {
+      showToast('Passwords do not match', true);
+      return;
+    }
+
+    if (password && password.length < 4) {
+      showToast('Password must be at least 4 characters', true);
+      return;
+    }
+
+    const userData = { username };
+    if (password) {
+      userData.password = password;
+    }
+
+    try {
+      let response;
+      if (id) {
+        response = await fetch(`/api/admin/users/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData)
+        });
+      } else {
+        response = await fetch('/api/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData)
+        });
+      }
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save');
+      }
+
+      await loadUsers();
+      renderUsers();
+      closeModal('userModal');
+      showToast(id ? 'User updated' : 'User created');
+    } catch (err) {
+      showToast(err.message || 'Failed to save user', true);
+    }
+  }
+
+  // Delete user
+  window.deleteUser = async function(id) {
+    if (!confirm('Delete this user?')) return;
+
+    try {
+      const response = await fetch(`/api/admin/users/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete');
+
+      await loadUsers();
+      renderUsers();
+      showToast('User deleted');
+    } catch (err) {
+      showToast('Failed to delete user', true);
+    }
+  };
 
   // Close modal helper
   window.closeModal = function(modalId) {

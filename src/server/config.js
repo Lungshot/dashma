@@ -21,7 +21,8 @@ const defaultConfig = {
     linkHoverEffect: 'glow',
     categoryHoverEffect: 'fade',
     nestingAnimation: 'slide',
-    authMode: 'basic',
+    authMode: 'basic', // Admin auth: basic, entraId
+    mainAuthMode: 'none', // Main site auth: none, basic, entraId
     entraId: {
       clientId: '',
       tenantId: '',
@@ -34,6 +35,7 @@ const defaultConfig = {
     passwordHash: bcrypt.hashSync('admin', 10),
     mustChangePassword: true
   },
+  users: [], // Regular users for main site auth: { id, username, passwordHash, createdAt }
   categories: [],
   links: []
 };
@@ -94,6 +96,8 @@ function getPublicSettings() {
     showTitle: config.settings.showTitle,
     siteLogo: config.settings.siteLogo,
     siteLogoMode: config.settings.siteLogoMode,
+    logoPosition: config.settings.logoPosition,
+    logoAlignment: config.settings.logoAlignment,
     backgroundColor: config.settings.backgroundColor,
     backgroundImage: config.settings.backgroundImage,
     fontFamily: config.settings.fontFamily,
@@ -115,7 +119,8 @@ function getPublicSettings() {
     footerSize: config.settings.footerSize,
     footerAlignment: config.settings.footerAlignment,
     footerHoverEffect: config.settings.footerHoverEffect,
-    authMode: config.settings.authMode
+    authMode: config.settings.authMode,
+    mainAuthMode: config.settings.mainAuthMode
   };
 }
 
@@ -236,6 +241,75 @@ function getAdminUsername() {
   return getConfig().admin.username;
 }
 
+// User management functions
+function getUsers() {
+  const config = getConfig();
+  if (!config.users) {
+    config.users = [];
+    saveConfig();
+  }
+  return config.users;
+}
+
+function addUser(username, password) {
+  const config = getConfig();
+  if (!config.users) {
+    config.users = [];
+  }
+
+  // Check if username already exists
+  if (config.users.some(u => u.username === username)) {
+    throw new Error('Username already exists');
+  }
+
+  const newUser = {
+    id: uuidv4(),
+    username: username,
+    passwordHash: bcrypt.hashSync(password, 10),
+    createdAt: new Date().toISOString()
+  };
+
+  config.users.push(newUser);
+  saveConfig();
+  return { id: newUser.id, username: newUser.username, createdAt: newUser.createdAt };
+}
+
+function updateUser(id, updates) {
+  const config = getConfig();
+  const index = config.users.findIndex(u => u.id === id);
+  if (index === -1) throw new Error('User not found');
+
+  if (updates.username) {
+    // Check if new username conflicts with existing
+    const existing = config.users.find(u => u.username === updates.username && u.id !== id);
+    if (existing) throw new Error('Username already exists');
+    config.users[index].username = updates.username;
+  }
+
+  if (updates.password) {
+    config.users[index].passwordHash = bcrypt.hashSync(updates.password, 10);
+  }
+
+  saveConfig();
+  return { id: config.users[index].id, username: config.users[index].username, createdAt: config.users[index].createdAt };
+}
+
+function deleteUser(id) {
+  const config = getConfig();
+  config.users = config.users.filter(u => u.id !== id);
+  saveConfig();
+}
+
+function verifyUser(username, password) {
+  const config = getConfig();
+  const user = config.users.find(u => u.username === username);
+  if (!user) return null;
+  if (bcrypt.compareSync(password, user.passwordHash)) {
+    return { id: user.id, username: user.username };
+  }
+  return null;
+}
+
 // Export/Import
 function exportConfig() {
   return getConfig();
@@ -265,6 +339,11 @@ module.exports = {
   updateAdminCredentials,
   mustChangePassword,
   getAdminUsername,
+  getUsers,
+  addUser,
+  updateUser,
+  deleteUser,
+  verifyUser,
   exportConfig,
   importConfig
 };

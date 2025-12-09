@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashma - Login</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #212121;
+      color: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .login-container {
+      width: 100%;
+      max-width: 400px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 40px;
+    }
+    .login-title {
+      text-align: center;
+      font-size: 1.5rem;
+      letter-spacing: 0.2em;
+      margin-bottom: 30px;
+      text-transform: uppercase;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #888888;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      color: #ffffff;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    .form-input:focus {
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      font-family: inherit;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      color: #ffffff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .btn-entra {
+      margin-top: 15px;
+      background: rgba(0, 120, 212, 0.3);
+      border-color: rgba(0, 120, 212, 0.5);
+    }
+    .btn-entra:hover {
+      background: rgba(0, 120, 212, 0.5);
+    }
+    .error-message {
+      background: rgba(255, 0, 0, 0.2);
+      border: 1px solid rgba(255, 0, 0, 0.3);
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    .divider {
+      text-align: center;
+      margin: 20px 0;
+      color: #888888;
+      font-size: 0.85rem;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1 class="login-title" id="site-title">Dashma</h1>
+
+    <div id="error-message" class="error-message hidden"></div>
+
+    <form id="login-form" method="POST">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <input type="text" id="username" name="username" class="form-input" required autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn">Login</button>
+    </form>
+
+    <div id="entra-section" class="hidden">
+      <div class="divider">or</div>
+      <a id="entra-link" href="/login/entra" class="btn btn-entra" style="display: block; text-align: center; text-decoration: none;">
+        Sign in with Microsoft
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // Get redirect URL from query params
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirect = urlParams.get('redirect') || '/';
+
+    // Set form action with redirect
+    document.getElementById('login-form').action = '/login?redirect=' + encodeURIComponent(redirect);
+    document.getElementById('entra-link').href = '/login/entra?redirect=' + encodeURIComponent(redirect);
+
+    // Show error if present in URL
+    if (urlParams.has('error')) {
+      const errorEl = document.getElementById('error-message');
+      errorEl.classList.remove('hidden');
+      if (urlParams.get('error') === 'entra') {
+        errorEl.textContent = 'Microsoft sign-in failed. Please try again.';
+      } else {
+        errorEl.textContent = 'Invalid username or password.';
+      }
+    }
+
+    // Check auth mode and customize page
+    fetch('/api/public/data')
+      .then(r => r.json())
+      .then(data => {
+        // Update title with site name
+        document.getElementById('site-title').textContent = data.settings.siteName || 'Dashma';
+        document.title = (data.settings.siteName || 'Dashma') + ' - Login';
+
+        // Show EntraID option if configured for main site
+        if (data.settings.mainAuthMode === 'entraId') {
+          document.getElementById('entra-section').classList.remove('hidden');
+        }
+      });
+  </script>
+</body>
+</html>

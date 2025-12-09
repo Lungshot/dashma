@@ -100,6 +100,24 @@
               <option value="custom">Custom Logo</option>
             </select>
           </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Logo Position</label>
+              <select class="form-select" id="logoPosition">
+                <option value="above">Above Title</option>
+                <option value="below">Below Title</option>
+                <option value="inline">Inline with Title</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Logo Alignment</label>
+              <select class="form-select" id="logoAlignment">
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+          </div>
           <div class="form-group" id="customLogoUpload">
             <div class="file-upload" id="logoImageUpload">
               <input type="file" accept="image/*" id="logoImageInput">
@@ -387,22 +405,29 @@
         </div>
 
         <div class="card">
-          <h3 class="card-title">Authentication Mode</h3>
+          <h3 class="card-title">Admin Authentication</h3>
+          <p class="text-muted mb-20">Controls access to this admin panel. Admin authentication is always required.</p>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Authentication Type</label>
+              <label class="form-label">Admin Auth Type</label>
               <select class="form-select" id="authMode">
-                <option value="none">No Authentication (Public)</option>
                 <option value="basic">Basic Authentication</option>
                 <option value="entraId">Microsoft Entra ID (SSO)</option>
               </select>
             </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Main Site Authentication</h3>
+          <p class="text-muted mb-20">Controls access to the main dashboard page for regular users.</p>
+          <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Session Timeout</label>
-              <select class="form-select" id="sessionTimeout">
-                <option value="1800000">30 Minutes</option>
-                <option value="3600000">1 Hour</option>
-                <option value="21600000">6 Hours</option>
+              <label class="form-label">Main Site Auth Type</label>
+              <select class="form-select" id="mainAuthMode">
+                <option value="none">No Authentication (Public)</option>
+                <option value="basic">Basic Authentication</option>
+                <option value="entraId">Microsoft Entra ID (SSO)</option>
               </select>
             </div>
           </div>
@@ -410,6 +435,7 @@
 
         <div class="card" id="entraIdSettings">
           <h3 class="card-title">Microsoft Entra ID Settings</h3>
+          <p class="text-muted mb-20">Configure SSO for admin and/or main site access.</p>
           <div class="form-group">
             <label class="form-label">Client ID</label>
             <input type="text" class="form-input" id="entraClientId" placeholder="Application (client) ID">
@@ -426,6 +452,17 @@
             <label class="form-label">Redirect URI</label>
             <input type="text" class="form-input" id="entraRedirectUri" placeholder="https://yourdomain.com/admin/callback">
           </div>
+        </div>
+
+        <div class="card" id="userManagementCard">
+          <h3 class="card-title">User Management</h3>
+          <p class="text-muted mb-20">Manage users who can access the main site when basic authentication is enabled.</p>
+          <div class="btn-group mb-20">
+            <button class="btn btn-primary" id="addUserBtn">Add User</button>
+          </div>
+          <ul class="item-list" id="userList">
+            <!-- Users rendered here -->
+          </ul>
         </div>
 
         <div class="btn-group">
@@ -546,6 +583,35 @@
       <div class="modal-footer">
         <button class="btn" onclick="closeModal('linkModal')">Cancel</button>
         <button class="btn btn-primary" id="saveLinkBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Modal -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="userModalTitle">Add User</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="userId">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-input" id="newUsername" placeholder="Enter username" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="newUserPassword" placeholder="Enter password" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <input type="password" class="form-input" id="newUserPasswordConfirm" placeholder="Confirm password" autocomplete="new-password">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('userModal')">Cancel</button>
+        <button class="btn btn-primary" id="saveUserBtn">Save</button>
       </div>
     </div>
   </div>

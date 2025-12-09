@@ -35,6 +35,7 @@
 
     // Apply title settings
     const header = document.querySelector('.header');
+    const headerContent = document.querySelector('.header-content');
     const titleWrapper = document.querySelector('.title-wrapper');
     const siteLogo = document.querySelector('.site-logo');
 
@@ -47,8 +48,10 @@
     }
 
     // Site logo
+    const logoPosition = s.logoPosition || 'above';
+    const logoAlignment = s.logoAlignment || 'center';
+
     if (s.siteLogoMode === 'favicon') {
-      // Use the first link's favicon or a default
       const firstLink = appData.links && appData.links[0];
       if (firstLink) {
         siteLogo.src = `/api/favicon?url=${encodeURIComponent(firstLink.url)}`;
@@ -61,6 +64,18 @@
       siteLogo.style.display = 'block';
     } else {
       siteLogo.style.display = 'none';
+    }
+
+    // Apply logo position and alignment
+    headerContent.className = 'header-content';
+    headerContent.classList.add(`logo-${logoPosition}`);
+    headerContent.classList.add(`logo-align-${logoAlignment}`);
+
+    // Reorder elements based on position
+    if (logoPosition === 'below') {
+      headerContent.appendChild(siteLogo);
+    } else {
+      headerContent.insertBefore(siteLogo, titleWrapper);
     }
 
     // Title alignment
