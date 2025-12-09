@@ -1,18 +1,9 @@
 const fastify = require('fastify')({ logger: true });
 const path = require('path');
-const fs = require('fs');
 const config = require('./config');
 const { registerRoutes } = require('./routes');
 const auth = require('./auth');
-
-// Setup file-based session store for persistence across server restarts
-const FileStore = require('session-file-store')(require('@fastify/session'));
-const sessionPath = path.join(__dirname, '..', '..', 'data', 'sessions');
-
-// Ensure session directory exists
-if (!fs.existsSync(sessionPath)) {
-  fs.mkdirSync(sessionPath, { recursive: true });
-}
+const FileSessionStore = require('./session-store');
 
 // Register plugins
 fastify.register(require('@fastify/formbody'));
@@ -20,10 +11,9 @@ fastify.register(require('@fastify/multipart'));
 fastify.register(require('@fastify/cookie'));
 fastify.register(require('@fastify/session'), {
   secret: process.env.SESSION_SECRET || 'dashma-secret-change-in-production-min-32-chars',
-  store: new FileStore({
-    path: sessionPath,
+  store: new FileSessionStore({
+    path: path.join(__dirname, '..', '..', 'data', 'sessions'),
     ttl: 86400, // 24 hours in seconds
-    retries: 0,
     reapInterval: 3600 // Clean up expired sessions every hour
   }),
   cookie: {
@@ -36,10 +26,11 @@ fastify.register(require('@fastify/session'), {
   rolling: true // Reset cookie maxAge on every response, keeping session alive while user is active
 });
 
-// Serve static files
+// Serve static files (but not index.html at root - we handle that with auth)
 fastify.register(require('@fastify/static'), {
   root: path.join(__dirname, '..', 'public'),
-  prefix: '/'
+  prefix: '/',
+  index: false // Don't serve index.html automatically
 });
 
 // Register routes

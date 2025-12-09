@@ -357,9 +357,14 @@ async function registerRoutes(fastify) {
     });
 
     // Update admin credentials
-    fastify.put('/api/admin/credentials', async (request) => {
+    fastify.put('/api/admin/credentials', async (request, reply) => {
       const { username, password } = request.body;
       config.updateAdminCredentials(username, password);
+      // If password was changed, force logout by destroying session
+      if (password) {
+        request.session.destroy();
+        return { success: true, requireRelogin: true };
+      }
       return { success: true };
     });
 

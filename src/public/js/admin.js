@@ -434,6 +434,110 @@
     }
   }
 
+  // Drag and drop functionality
+  let draggedItem = null;
+
+  function setupDragAndDrop(list, type) {
+    const items = list.querySelectorAll('.item-list-item[draggable="true"]');
+
+    items.forEach(item => {
+      // Drag start
+      item.addEventListener('dragstart', (e) => {
+        draggedItem = item;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', item.dataset.id);
+      });
+
+      // Drag end
+      item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        draggedItem = null;
+        // Remove all drag-over classes
+        list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      });
+
+      // Drag over
+      item.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+
+        if (draggedItem && draggedItem !== item) {
+          item.classList.add('drag-over');
+        }
+      });
+
+      // Drag leave
+      item.addEventListener('dragleave', () => {
+        item.classList.remove('drag-over');
+      });
+
+      // Drop
+      item.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        item.classList.remove('drag-over');
+
+        if (!draggedItem || draggedItem === item) return;
+
+        // Get the bounding rect to determine if dropping above or below
+        const rect = item.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        const insertBefore = e.clientY < midY;
+
+        // Reorder in DOM
+        if (insertBefore) {
+          list.insertBefore(draggedItem, item);
+        } else {
+          list.insertBefore(draggedItem, item.nextSibling);
+        }
+
+        // Get new order of IDs
+        const newOrder = Array.from(list.querySelectorAll('.item-list-item[data-id]'))
+          .map(el => el.dataset.id);
+
+        // Save new order to server
+        await saveReorder(type, newOrder, item.dataset.category);
+      });
+    });
+  }
+
+  // Save reordered items to server
+  async function saveReorder(type, ids, categoryId = null) {
+    try {
+      let endpoint, body;
+
+      if (type === 'categories') {
+        endpoint = '/api/admin/categories/reorder';
+        body = { ids };
+      } else {
+        endpoint = '/api/admin/links/reorder';
+        // For links, get the category from the filter or the first item
+        const filterCategory = document.getElementById('linkCategoryFilter').value;
+        body = { categoryId: filterCategory || categoryId, ids };
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) throw new Error('Failed to save order');
+
+      // Reload config to sync
+      await loadConfig();
+      showToast('Order saved');
+    } catch (err) {
+      showToast('Failed to save order', true);
+      // Re-render to reset order
+      if (type === 'categories') {
+        renderCategories();
+      } else {
+        renderLinks();
+      }
+    }
+  }
+
   // Render categories list
   function renderCategories() {
     const list = document.getElementById('categoryList');
@@ -445,7 +549,7 @@
     }
 
     list.innerHTML = categories.map(cat => `
-      <li class="item-list-item" data-id="${cat.id}">
+      <li class="item-list-item" data-id="${cat.id}" draggable="true">
         <span class="item-drag-handle">☰</span>
         <div class="item-info">
           <div class="item-name">${escapeHtml(cat.name)}</div>
@@ -457,6 +561,9 @@
         </div>
       </li>
     `).join('');
+
+    // Setup drag and drop for categories
+    setupDragAndDrop(list, 'categories');
   }
 
   function countLinksInCategory(categoryId) {
@@ -567,9 +674,9 @@
       const category = appConfig.categories.find(c => c.id === link.categoryId);
       const categoryName = category ? category.name : 'Uncategorized';
       const tags = (link.tags || []).join(', ');
-      
+
       return `
-        <li class="item-list-item" data-id="${link.id}">
+        <li class="item-list-item" data-id="${link.id}" data-category="${link.categoryId}" draggable="true">
           <span class="item-drag-handle">☰</span>
           <div class="item-info">
             <div class="item-name">${escapeHtml(link.name)}</div>
@@ -582,6 +689,9 @@
         </li>
       `;
     }).join('');
+
+    // Setup drag and drop for links
+    setupDragAndDrop(list, 'links');
   }
 
   // Open link modal
@@ -791,10 +901,21 @@
       });
 
       if (!response.ok) throw new Error('Failed to save');
-      
+
+      const result = await response.json();
+
       document.getElementById('adminPassword').value = '';
       document.getElementById('adminPasswordConfirm').value = '';
-      showToast('Credentials updated');
+
+      // If password was changed, force re-login
+      if (result.requireRelogin) {
+        showToast('Credentials updated. Redirecting to login...');
+        setTimeout(() => {
+          window.location.href = '/admin/login';
+        }, 1500);
+      } else {
+        showToast('Credentials updated');
+      }
     } catch (err) {
       showToast('Failed to update credentials', true);
     }

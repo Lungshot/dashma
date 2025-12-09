@@ -291,6 +291,17 @@ body {
   cursor: grabbing;
 }
 
+/* Drag and drop states */
+.item-list-item.dragging {
+  opacity: 0.5;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.item-list-item.drag-over {
+  border-top: 2px solid var(--accent-color, #888888);
+  margin-top: -2px;
+}
+
 .item-info {
   flex-grow: 1;
 }
