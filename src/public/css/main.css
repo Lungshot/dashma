@@ -302,33 +302,32 @@ body {
   margin-top: 20px;
 }
 
-/* Categories Grid */
+/* Categories Grid - Using CSS Columns for vertical reflow when collapsing */
 .categories-grid {
-  display: grid;
-  gap: 30px;
+  column-gap: 30px;
 }
 
-.categories-grid.cols-1 { grid-template-columns: 1fr; }
-.categories-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
-.categories-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
-.categories-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
-.categories-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
-.categories-grid.cols-6 { grid-template-columns: repeat(6, 1fr); }
+.categories-grid.cols-1 { column-count: 1; }
+.categories-grid.cols-2 { column-count: 2; }
+.categories-grid.cols-3 { column-count: 3; }
+.categories-grid.cols-4 { column-count: 4; }
+.categories-grid.cols-5 { column-count: 5; }
+.categories-grid.cols-6 { column-count: 6; }
 
 @media (max-width: 1200px) {
   .categories-grid.cols-5,
-  .categories-grid.cols-6 { grid-template-columns: repeat(3, 1fr); }
+  .categories-grid.cols-6 { column-count: 3; }
 }
 
 @media (max-width: 900px) {
   .categories-grid.cols-3,
   .categories-grid.cols-4,
   .categories-grid.cols-5,
-  .categories-grid.cols-6 { grid-template-columns: repeat(2, 1fr); }
+  .categories-grid.cols-6 { column-count: 2; }
 }
 
 @media (max-width: 600px) {
-  .categories-grid { grid-template-columns: 1fr !important; }
+  .categories-grid { column-count: 1 !important; }
 }
 
 /* Category */
@@ -337,6 +336,8 @@ body {
   border-radius: 12px;
   padding: 20px;
   transition: background 0.2s ease;
+  break-inside: avoid; /* Prevent category from being split across columns */
+  margin-bottom: 30px; /* Vertical spacing between categories */
 }
 
 .category-header {
@@ -706,8 +707,8 @@ body {
   padding: 4px 0;
 }
 
-.compact-mode .categories-grid {
-  gap: 10px;
+.compact-mode .category {
+  margin-bottom: 10px;
 }
 
 /* Mobile adjustments */
