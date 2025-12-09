@@ -130,6 +130,9 @@
       }
     }
 
+    // Update browser tab title
+    document.title = s.siteName || 'Dashma';
+
     // Show header now that settings are applied (was hidden to prevent FOUC)
     header.style.visibility = 'visible';
   }
