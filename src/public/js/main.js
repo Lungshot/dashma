@@ -129,6 +129,9 @@
         titleParent.addEventListener('mouseleave', () => resetHackedText(titleEl));
       }
     }
+
+    // Show header now that settings are applied (was hidden to prevent FOUC)
+    header.style.visibility = 'visible';
   }
 
   // Render categories and links

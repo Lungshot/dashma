@@ -343,11 +343,15 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
       });
-      if (!response.ok) throw new Error('Failed to save');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
       appConfig.settings = { ...appConfig.settings, ...settings };
       showToast('Appearance settings saved');
     } catch (err) {
-      showToast('Failed to save settings', true);
+      console.error('Save settings error:', err);
+      showToast(err.message || 'Failed to save settings', true);
     }
   }
 
@@ -825,11 +829,15 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
       });
-      if (!response.ok) throw new Error('Failed to save');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
       appConfig.settings = { ...appConfig.settings, ...settings };
       showToast('Authentication settings saved');
     } catch (err) {
-      showToast('Failed to save settings', true);
+      console.error('Save auth settings error:', err);
+      showToast(err.message || 'Failed to save settings', true);
     }
   }
 

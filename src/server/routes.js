@@ -231,8 +231,13 @@ async function registerRoutes(fastify) {
     });
 
     // Update settings
-    fastify.put('/api/admin/settings', async (request) => {
-      return config.updateSettings(request.body);
+    fastify.put('/api/admin/settings', async (request, reply) => {
+      try {
+        return config.updateSettings(request.body);
+      } catch (err) {
+        console.error('Failed to update settings:', err);
+        return reply.code(500).send({ error: err.message || 'Failed to save settings' });
+      }
     });
 
     // Categories CRUD
