@@ -50,26 +50,31 @@
     // Site logo
     const logoPosition = s.logoPosition || 'above';
     const logoAlignment = s.logoAlignment || 'center';
+    let logoVisible = false;
 
     if (s.siteLogoMode === 'favicon') {
       const firstLink = appData.links && appData.links[0];
       if (firstLink) {
         siteLogo.src = `/api/favicon?url=${encodeURIComponent(firstLink.url)}`;
         siteLogo.style.display = 'block';
+        logoVisible = true;
       } else {
         siteLogo.style.display = 'none';
       }
     } else if (s.siteLogoMode === 'custom' && s.siteLogo) {
       siteLogo.src = s.siteLogo;
       siteLogo.style.display = 'block';
+      logoVisible = true;
     } else {
       siteLogo.style.display = 'none';
     }
 
-    // Apply logo position and alignment
+    // Apply logo position and alignment only when logo is visible
     headerContent.className = 'header-content';
-    headerContent.classList.add(`logo-${logoPosition}`);
-    headerContent.classList.add(`logo-align-${logoAlignment}`);
+    if (logoVisible) {
+      headerContent.classList.add(`logo-${logoPosition}`);
+      headerContent.classList.add(`logo-align-${logoAlignment}`);
+    }
 
     // Reorder elements based on position
     if (logoPosition === 'below') {
