@@ -189,6 +189,7 @@
     document.getElementById('showTitle').checked = s.showTitle !== false;
 
     // Site Logo
+    document.getElementById('showLogo').checked = s.showLogo !== false;
     setSelectValue('siteLogoMode', s.siteLogoMode || 'none');
     setSelectValue('logoPosition', s.logoPosition || 'above');
     setSelectValue('logoAlignment', s.logoAlignment || 'center');
@@ -312,6 +313,7 @@
       titleHoverEffect: document.getElementById('titleHoverEffect').value,
       titleLinkUrl: document.getElementById('titleLinkUrl').value.trim() || null,
       showTitle: document.getElementById('showTitle').checked,
+      showLogo: document.getElementById('showLogo').checked,
       siteLogoMode: document.getElementById('siteLogoMode').value,
       logoPosition: document.getElementById('logoPosition').value,
       logoAlignment: document.getElementById('logoAlignment').value,
