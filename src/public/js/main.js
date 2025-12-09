@@ -159,7 +159,18 @@
     grid.innerHTML = '';
 
     const sortedCategories = [...appData.categories].sort((a, b) => a.order - b.order);
+    const numColumns = parseInt(appData.settings.columns) || 1;
 
+    // Create column containers
+    const columns = [];
+    for (let i = 0; i < numColumns; i++) {
+      const column = document.createElement('div');
+      column.className = 'category-column';
+      columns.push(column);
+      grid.appendChild(column);
+    }
+
+    // Distribute categories into columns (round-robin distribution)
     sortedCategories.forEach((category, catIndex) => {
       const categoryLinks = appData.links
         .filter(l => l.categoryId === category.id)
@@ -185,7 +196,9 @@
         </div>
       `;
 
-      grid.appendChild(categoryEl);
+      // Add to appropriate column (round-robin)
+      const columnIndex = catIndex % numColumns;
+      columns[columnIndex].appendChild(categoryEl);
     });
 
     // Add click handlers for category headers
