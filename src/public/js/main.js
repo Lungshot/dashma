@@ -50,8 +50,12 @@
     // Site logo
     const logoPosition = s.logoPosition || 'above';
     const logoAlignment = s.logoAlignment || 'center';
+    const logoSize = s.logoSize || 'medium';
     const showLogo = s.showLogo !== false;
     let logoVisible = false;
+
+    // Apply logo size class
+    siteLogo.className = `site-logo size-${logoSize}`;
 
     if (showLogo && s.siteLogoMode === 'favicon') {
       const firstLink = appData.links && appData.links[0];

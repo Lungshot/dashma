@@ -95,6 +95,22 @@ body {
   object-fit: contain;
 }
 
+/* Logo sizes */
+.site-logo.size-small {
+  max-height: 40px;
+  max-width: 120px;
+}
+
+.site-logo.size-medium {
+  max-height: 60px;
+  max-width: 200px;
+}
+
+.site-logo.size-large {
+  max-height: 100px;
+  max-width: 300px;
+}
+
 /* Remove logo margin when inline */
 .header-content.logo-inline .site-logo {
   margin-bottom: 0;

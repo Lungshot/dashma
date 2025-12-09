@@ -97,6 +97,7 @@ function getPublicSettings() {
     showLogo: config.settings.showLogo,
     siteLogo: config.settings.siteLogo,
     siteLogoMode: config.settings.siteLogoMode,
+    logoSize: config.settings.logoSize,
     logoPosition: config.settings.logoPosition,
     logoAlignment: config.settings.logoAlignment,
     backgroundColor: config.settings.backgroundColor,
