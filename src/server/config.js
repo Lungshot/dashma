@@ -318,11 +318,42 @@ function verifyUser(username, password) {
 
 // Export/Import
 function exportConfig() {
-  return getConfig();
+  const config = getConfig();
+
+  // Create a copy of settings without auth-related fields
+  const { authMode, mainAuthMode, entraId, ...appearanceSettings } = config.settings;
+
+  // Return only Appearance, Categories, Links, and Account settings
+  // Excludes: authMode, mainAuthMode, entraId, users, requests
+  return {
+    settings: appearanceSettings,
+    categories: config.categories,
+    links: config.links,
+    admin: config.admin
+  };
 }
 
 function importConfig(newConfig) {
-  configCache = newConfig;
+  const currentConfig = getConfig();
+
+  // Preserve auth settings if not in imported config
+  const mergedSettings = {
+    ...newConfig.settings,
+    authMode: newConfig.settings?.authMode || currentConfig.settings.authMode,
+    mainAuthMode: newConfig.settings?.mainAuthMode || currentConfig.settings.mainAuthMode,
+    entraId: newConfig.settings?.entraId || currentConfig.settings.entraId
+  };
+
+  // Merge imported config with preserved auth settings
+  configCache = {
+    ...currentConfig,
+    settings: mergedSettings,
+    categories: newConfig.categories || currentConfig.categories,
+    links: newConfig.links || currentConfig.links,
+    admin: newConfig.admin || currentConfig.admin
+    // users and requests are preserved from current config
+  };
+
   saveConfig();
 }
 
