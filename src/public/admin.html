@@ -17,6 +17,7 @@
         <a class="nav-item active" data-panel="appearance">Appearance</a>
         <a class="nav-item" data-panel="categories">Categories</a>
         <a class="nav-item" data-panel="links">Links</a>
+        <a class="nav-item" data-panel="requests">Requests <span class="badge" id="requestsBadge"></span></a>
         <a class="nav-item" data-panel="auth">Authentication</a>
         <a class="nav-item" data-panel="backup">Backup</a>
         <a class="nav-item" data-panel="account">Account</a>
@@ -407,6 +408,45 @@
           </div>
           <ul class="item-list" id="linkList">
             <!-- Links rendered here -->
+          </ul>
+        </div>
+      </div>
+
+      <!-- Requests Panel -->
+      <div class="panel" id="panel-requests">
+        <div class="content-header">
+          <h2 class="content-title">Requests</h2>
+          <p class="content-subtitle">Review and approve user-submitted categories and links</p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Category Requests</h3>
+          <p class="text-muted mb-20">Users can submit requests at <a href="/request" target="_blank">/request</a></p>
+          <div class="request-filter mb-20">
+            <select class="form-select" id="categoryRequestFilter" style="width: auto; display: inline-block;">
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="denied">Denied</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+          <ul class="item-list" id="categoryRequestList">
+            <li class="no-items">No category requests</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Link Requests</h3>
+          <div class="request-filter mb-20">
+            <select class="form-select" id="linkRequestFilter" style="width: auto; display: inline-block;">
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="denied">Denied</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+          <ul class="item-list" id="linkRequestList">
+            <li class="no-items">No link requests</li>
           </ul>
         </div>
       </div>

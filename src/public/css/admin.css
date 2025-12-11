@@ -533,6 +533,66 @@ body {
   }
 }
 
+/* Badge */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  background: rgba(220, 53, 69, 0.8);
+  border-radius: 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Request Status */
+.request-status {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  border-radius: 4px;
+  margin-right: 8px;
+}
+
+.status-pending {
+  background: rgba(255, 193, 7, 0.3);
+  color: #ffc107;
+}
+
+.status-approved {
+  background: rgba(40, 167, 69, 0.3);
+  color: #28a745;
+}
+
+.status-denied {
+  background: rgba(220, 53, 69, 0.3);
+  color: #dc3545;
+}
+
+/* Success button */
+.btn-success {
+  background: rgba(40, 167, 69, 0.4);
+  border-color: rgba(40, 167, 69, 0.6);
+}
+
+.btn-success:hover {
+  background: rgba(40, 167, 69, 0.6);
+}
+
+.btn-success:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* No items message */
+.no-items {
+  padding: 20px;
+  text-align: center;
+  color: #888888;
+  font-style: italic;
+}
+
 /* Utility */
 .hidden { display: none !important; }
 .mt-20 { margin-top: 20px; }
