@@ -53,17 +53,22 @@ async function handleCallback(code, redirectUri) {
 
 function requireAuth(request, reply, done) {
   const settings = config.getConfig().settings;
-  
+
   if (settings.authMode === 'none') {
     done();
     return;
   }
-  
+
   if (!request.session || !request.session.authenticated) {
+    // For API requests, return 401 instead of redirect to prevent saving HTML as JSON
+    if (request.url.startsWith('/api/')) {
+      reply.code(401).send({ error: 'Authentication required' });
+      return;
+    }
     reply.redirect('/admin/login');
     return;
   }
-  
+
   done();
 }
 
