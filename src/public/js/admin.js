@@ -88,6 +88,10 @@
     setupColorPicker('bgColorPicker', 'backgroundColor');
     setupColorPicker('textColorPicker', 'textColor');
     setupColorPicker('accentColorPicker', 'accentColor');
+    setupColorPicker('categoryBgColorPicker', 'categoryBgColor');
+    setupColorPicker('categoryTitleColorPicker', 'categoryTitleColor');
+    setupColorPicker('linkCardBgColorPicker', 'linkCardBgColor');
+    setupColorPicker('tagBgColorPicker', 'tagBgColor');
 
     // Save appearance
     document.getElementById('saveAppearance').addEventListener('click', saveAppearance);
@@ -230,6 +234,14 @@
     document.getElementById('textColorPicker').value = s.textColor || '#ffffff';
     document.getElementById('accentColor').value = s.accentColor || '#888888';
     document.getElementById('accentColorPicker').value = s.accentColor || '#888888';
+    document.getElementById('categoryBgColor').value = s.categoryBgColor || 'rgba(255,255,255,0.03)';
+    document.getElementById('categoryBgColorPicker').value = rgbaToHex(s.categoryBgColor) || '#ffffff';
+    document.getElementById('categoryTitleColor').value = s.categoryTitleColor || '#ffffff';
+    document.getElementById('categoryTitleColorPicker').value = s.categoryTitleColor || '#ffffff';
+    document.getElementById('linkCardBgColor').value = s.linkCardBgColor || 'rgba(255,255,255,0.05)';
+    document.getElementById('linkCardBgColorPicker').value = rgbaToHex(s.linkCardBgColor) || '#ffffff';
+    document.getElementById('tagBgColor').value = s.tagBgColor || 'rgba(255,255,255,0.1)';
+    document.getElementById('tagBgColorPicker').value = rgbaToHex(s.tagBgColor) || '#ffffff';
 
     // Background image preview
     if (s.backgroundImage) {
@@ -345,6 +357,10 @@
       backgroundColor: document.getElementById('backgroundColor').value,
       textColor: document.getElementById('textColor').value,
       accentColor: document.getElementById('accentColor').value,
+      categoryBgColor: document.getElementById('categoryBgColor').value,
+      categoryTitleColor: document.getElementById('categoryTitleColor').value,
+      linkCardBgColor: document.getElementById('linkCardBgColor').value,
+      tagBgColor: document.getElementById('tagBgColor').value,
       fontFamily: document.getElementById('fontFamily').value,
       titleFontFamily: document.getElementById('titleFontFamily').value,
       columns: parseInt(document.getElementById('columns').value),
@@ -1127,6 +1143,20 @@
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  // Convert rgba to hex for color picker (approximate)
+  function rgbaToHex(rgba) {
+    if (!rgba) return '#ffffff';
+    if (rgba.startsWith('#')) return rgba;
+    const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+      const r = parseInt(match[1]).toString(16).padStart(2, '0');
+      const g = parseInt(match[2]).toString(16).padStart(2, '0');
+      const b = parseInt(match[3]).toString(16).padStart(2, '0');
+      return '#' + r + g + b;
+    }
+    return '#ffffff';
   }
 
   // Update requests badge

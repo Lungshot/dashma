@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashma Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@300;400;500&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&family=Lato:wght@300;400;700&family=Lora:wght@400;500;600&family=Merriweather:wght@300;400;700&family=Montserrat:wght@300;400;500;600&family=Nunito:wght@300;400;500;600&family=Open+Sans:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&family=Poppins:wght@300;400;500;600&family=Roboto+Mono:wght@300;400;500&family=Roboto:wght@300;400;500;700&family=Source+Sans+Pro:wght@300;400;600&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body>
@@ -168,6 +171,38 @@
               </div>
             </div>
           </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Category Background</label>
+              <div class="color-picker-wrapper">
+                <input type="color" class="color-picker" id="categoryBgColorPicker" value="#ffffff">
+                <input type="text" class="form-input color-value" id="categoryBgColor" value="rgba(255,255,255,0.03)">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category Title Color</label>
+              <div class="color-picker-wrapper">
+                <input type="color" class="color-picker" id="categoryTitleColorPicker" value="#ffffff">
+                <input type="text" class="form-input color-value" id="categoryTitleColor" value="#ffffff">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Link Card Background</label>
+              <div class="color-picker-wrapper">
+                <input type="color" class="color-picker" id="linkCardBgColorPicker" value="#ffffff">
+                <input type="text" class="form-input color-value" id="linkCardBgColor" value="rgba(255,255,255,0.05)">
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Tag Background</label>
+              <div class="color-picker-wrapper">
+                <input type="color" class="color-picker" id="tagBgColorPicker" value="#ffffff">
+                <input type="text" class="form-input color-value" id="tagBgColor" value="rgba(255,255,255,0.1)">
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="card">
@@ -188,27 +223,75 @@
             <div class="form-group">
               <label class="form-label">Body Font</label>
               <select class="form-select" id="fontFamily">
-                <option value="'Courier New', Courier, monospace">Courier New (Monospace)</option>
-                <option value="'Consolas', monospace">Consolas</option>
-                <option value="'Monaco', monospace">Monaco</option>
-                <option value="'Roboto Mono', monospace">Roboto Mono</option>
-                <option value="'Arial', sans-serif">Arial</option>
-                <option value="'Helvetica Neue', sans-serif">Helvetica Neue</option>
-                <option value="'Inter', sans-serif">Inter</option>
-                <option value="'Georgia', serif">Georgia</option>
+                <optgroup label="Sans-Serif (Modern)">
+                  <option value="'Inter', sans-serif">Inter</option>
+                  <option value="'Poppins', sans-serif">Poppins</option>
+                  <option value="'Roboto', sans-serif">Roboto</option>
+                  <option value="'Open Sans', sans-serif">Open Sans</option>
+                  <option value="'Nunito', sans-serif">Nunito</option>
+                  <option value="'Lato', sans-serif">Lato</option>
+                  <option value="'Montserrat', sans-serif">Montserrat</option>
+                  <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
+                  <option value="'Work Sans', sans-serif">Work Sans</option>
+                  <option value="'DM Sans', sans-serif">DM Sans</option>
+                </optgroup>
+                <optgroup label="Sans-Serif (System)">
+                  <option value="'Arial', sans-serif">Arial</option>
+                  <option value="'Helvetica Neue', sans-serif">Helvetica Neue</option>
+                  <option value="system-ui, sans-serif">System UI</option>
+                  <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                </optgroup>
+                <optgroup label="Monospace">
+                  <option value="'Courier New', Courier, monospace">Courier New</option>
+                  <option value="'Consolas', monospace">Consolas</option>
+                  <option value="'Monaco', monospace">Monaco</option>
+                  <option value="'Roboto Mono', monospace">Roboto Mono</option>
+                  <option value="'Fira Code', monospace">Fira Code</option>
+                  <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                </optgroup>
+                <optgroup label="Serif">
+                  <option value="'Georgia', serif">Georgia</option>
+                  <option value="'Playfair Display', serif">Playfair Display</option>
+                  <option value="'Merriweather', serif">Merriweather</option>
+                  <option value="'Lora', serif">Lora</option>
+                </optgroup>
               </select>
             </div>
             <div class="form-group">
               <label class="form-label">Title Font</label>
               <select class="form-select" id="titleFontFamily">
-                <option value="'Courier New', Courier, monospace">Courier New (Monospace)</option>
-                <option value="'Consolas', monospace">Consolas</option>
-                <option value="'Monaco', monospace">Monaco</option>
-                <option value="'Roboto Mono', monospace">Roboto Mono</option>
-                <option value="'Arial', sans-serif">Arial</option>
-                <option value="'Helvetica Neue', sans-serif">Helvetica Neue</option>
-                <option value="'Inter', sans-serif">Inter</option>
-                <option value="'Georgia', serif">Georgia</option>
+                <optgroup label="Sans-Serif (Modern)">
+                  <option value="'Inter', sans-serif">Inter</option>
+                  <option value="'Poppins', sans-serif">Poppins</option>
+                  <option value="'Roboto', sans-serif">Roboto</option>
+                  <option value="'Open Sans', sans-serif">Open Sans</option>
+                  <option value="'Nunito', sans-serif">Nunito</option>
+                  <option value="'Lato', sans-serif">Lato</option>
+                  <option value="'Montserrat', sans-serif">Montserrat</option>
+                  <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
+                  <option value="'Work Sans', sans-serif">Work Sans</option>
+                  <option value="'DM Sans', sans-serif">DM Sans</option>
+                </optgroup>
+                <optgroup label="Sans-Serif (System)">
+                  <option value="'Arial', sans-serif">Arial</option>
+                  <option value="'Helvetica Neue', sans-serif">Helvetica Neue</option>
+                  <option value="system-ui, sans-serif">System UI</option>
+                  <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                </optgroup>
+                <optgroup label="Monospace">
+                  <option value="'Courier New', Courier, monospace">Courier New</option>
+                  <option value="'Consolas', monospace">Consolas</option>
+                  <option value="'Monaco', monospace">Monaco</option>
+                  <option value="'Roboto Mono', monospace">Roboto Mono</option>
+                  <option value="'Fira Code', monospace">Fira Code</option>
+                  <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                </optgroup>
+                <optgroup label="Serif">
+                  <option value="'Georgia', serif">Georgia</option>
+                  <option value="'Playfair Display', serif">Playfair Display</option>
+                  <option value="'Merriweather', serif">Merriweather</option>
+                  <option value="'Lora', serif">Lora</option>
+                </optgroup>
               </select>
             </div>
           </div>

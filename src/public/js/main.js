@@ -32,6 +32,10 @@
     root.style.setProperty('--title-font', s.titleFontFamily);
     root.style.setProperty('--text-color', s.textColor);
     root.style.setProperty('--accent-color', s.accentColor);
+    if (s.categoryBgColor) root.style.setProperty('--category-bg-color', s.categoryBgColor);
+    if (s.categoryTitleColor) root.style.setProperty('--category-title-color', s.categoryTitleColor);
+    if (s.linkCardBgColor) root.style.setProperty('--link-card-bg-color', s.linkCardBgColor);
+    if (s.tagBgColor) root.style.setProperty('--tag-bg-color', s.tagBgColor);
 
     // Apply title settings
     const header = document.querySelector('.header');
