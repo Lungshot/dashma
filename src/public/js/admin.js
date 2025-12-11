@@ -7,6 +7,10 @@
   let users = [];
   let requests = { categories: [], links: [] };
 
+  // Auto-save debounce timer
+  let autoSaveTimer = null;
+  const AUTO_SAVE_DELAY = 800; // ms
+
   // Re-authentication handling
   let pendingRequest = null;
 
@@ -161,7 +165,10 @@
     setupColorPicker('linkCardBgColorPicker', 'linkCardBgColor');
     setupColorPicker('tagBgColorPicker', 'tagBgColor');
 
-    // Save appearance
+    // Auto-save appearance on change
+    setupAppearanceAutoSave();
+
+    // Save appearance (keep for manual save if needed)
     document.getElementById('saveAppearance').addEventListener('click', saveAppearance);
 
     // Background image upload
@@ -235,16 +242,36 @@
   function setupColorPicker(pickerId, inputId) {
     const picker = document.getElementById(pickerId);
     const input = document.getElementById(inputId);
-    
+
     picker.addEventListener('input', () => {
       input.value = picker.value;
     });
-    
+
     input.addEventListener('input', () => {
       if (/^#[0-9A-Fa-f]{6}$/.test(input.value)) {
         picker.value = input.value;
       }
     });
+  }
+
+  // Auto-save appearance settings
+  function setupAppearanceAutoSave() {
+    const panel = document.getElementById('panel-appearance');
+
+    // Get all inputs, selects, and checkboxes in the appearance panel
+    const inputs = panel.querySelectorAll('input:not([type="file"]), select');
+
+    inputs.forEach(input => {
+      const eventType = (input.type === 'checkbox' || input.tagName === 'SELECT') ? 'change' : 'input';
+      input.addEventListener(eventType, debounceAutoSave);
+    });
+  }
+
+  function debounceAutoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+      saveAppearance(true); // true = silent (no toast)
+    }, AUTO_SAVE_DELAY);
   }
 
   // File upload helper
@@ -418,7 +445,7 @@
   }
 
   // Save appearance settings
-  async function saveAppearance() {
+  async function saveAppearance(silent = false) {
     const settings = {
       siteName: document.getElementById('siteName').value,
       titleSize: document.getElementById('titleSize').value,
@@ -468,7 +495,9 @@
         throw new Error(errorData.error || `Server error: ${response.status}`);
       }
       appConfig.settings = { ...appConfig.settings, ...settings };
-      showToast('Appearance settings saved');
+      if (!silent) {
+        showToast('Appearance settings saved');
+      }
     } catch (err) {
       console.error('Save settings error:', err);
       if (err.message !== 'Authentication required') {
