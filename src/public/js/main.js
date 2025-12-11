@@ -231,7 +231,8 @@
     
     let iconHtml = '';
     if (s.showLinkIcons) {
-      const iconSrc = link.customIcon || `/api/favicon?url=${encodeURIComponent(link.url)}`;
+      // Pass link name as app hint for selfh.st icon lookup
+      const iconSrc = link.customIcon || `/api/favicon?url=${encodeURIComponent(link.url)}&app=${encodeURIComponent(link.name)}`;
       iconHtml = `<img class="link-icon" src="${iconSrc}" alt="" loading="lazy" onerror="this.style.display='none'">`;
     }
 
@@ -433,7 +434,7 @@
       
       let iconHtml = '';
       if (s.showLinkIcons) {
-        const iconSrc = link.customIcon || `/api/favicon?url=${encodeURIComponent(link.url)}`;
+        const iconSrc = link.customIcon || `/api/favicon?url=${encodeURIComponent(link.url)}&app=${encodeURIComponent(link.name)}`;
         iconHtml = `<img class="search-result-icon" src="${iconSrc}" alt="" onerror="this.style.display='none'">`;
       }
 
