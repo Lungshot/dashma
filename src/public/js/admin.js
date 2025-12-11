@@ -5,17 +5,21 @@
   let appConfig = null;
 
   let users = [];
+  let requests = { categories: [], links: [] };
 
   // Initialize
   async function init() {
     await loadConfig();
     await loadUsers();
+    await loadRequests();
     setupNavigation();
     setupEventListeners();
     populateForm();
     renderCategories();
     renderLinks();
     renderUsers();
+    renderRequests();
+    updateRequestsBadge();
   }
 
   // Load configuration from API
@@ -42,6 +46,18 @@
     }
   }
 
+  // Load requests
+  async function loadRequests() {
+    try {
+      const response = await fetch('/api/admin/requests');
+      if (!response.ok) throw new Error('Failed to load requests');
+      requests = await response.json();
+    } catch (err) {
+      console.error('Failed to load requests:', err);
+      requests = { categories: [], links: [] };
+    }
+  }
+
   // Setup navigation
   function setupNavigation() {
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -58,6 +74,9 @@
           toggleEntraSettings();
           toggleUserManagement();
           renderUsers();
+        }
+        if (panel === 'requests') {
+          renderRequests();
         }
       });
     });
@@ -112,6 +131,10 @@
 
     // Account
     document.getElementById('saveCredentials').addEventListener('click', saveCredentials);
+
+    // Requests filters
+    document.getElementById('categoryRequestFilter').addEventListener('change', renderRequests);
+    document.getElementById('linkRequestFilter').addEventListener('change', renderRequests);
 
     // Modal close buttons
     document.querySelectorAll('.modal-close').forEach(btn => {
@@ -1105,6 +1128,261 @@
     div.textContent = text;
     return div.innerHTML;
   }
+
+  // Update requests badge
+  function updateRequestsBadge() {
+    const badge = document.getElementById('requestsBadge');
+    const pendingCount = (requests.categories || []).filter(r => r.status === 'pending').length +
+                         (requests.links || []).filter(r => r.status === 'pending').length;
+    if (pendingCount > 0) {
+      badge.textContent = pendingCount;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // Render requests
+  function renderRequests() {
+    renderCategoryRequests();
+    renderLinkRequests();
+  }
+
+  function renderCategoryRequests() {
+    const list = document.getElementById('categoryRequestList');
+    const filter = document.getElementById('categoryRequestFilter').value;
+
+    let categoryRequests = requests.categories || [];
+    if (filter !== 'all') {
+      categoryRequests = categoryRequests.filter(r => r.status === filter);
+    }
+
+    if (categoryRequests.length === 0) {
+      list.innerHTML = `<li class="no-items">No ${filter === 'all' ? '' : filter + ' '}category requests</li>`;
+      return;
+    }
+
+    list.innerHTML = categoryRequests.map(req => {
+      const date = new Date(req.submittedAt).toLocaleDateString();
+      const statusClass = req.status === 'approved' ? 'status-approved' : req.status === 'denied' ? 'status-denied' : 'status-pending';
+
+      let actions = '';
+      if (req.status === 'pending') {
+        actions = `
+          <button class="btn btn-sm btn-success" onclick="approveCategoryRequest('${req.id}')">Approve</button>
+          <button class="btn btn-sm btn-danger" onclick="denyCategoryRequest('${req.id}')">Deny</button>
+        `;
+      } else {
+        actions = `
+          <button class="btn btn-sm btn-danger" onclick="deleteCategoryRequest('${req.id}')">Delete</button>
+        `;
+      }
+
+      return `
+        <li class="item-list-item">
+          <div class="item-info">
+            <div class="item-name">${escapeHtml(req.name)}</div>
+            <div class="item-meta">
+              <span class="request-status ${statusClass}">${req.status}</span>
+              Submitted: ${date} by ${escapeHtml(req.submittedBy || 'anonymous')}
+            </div>
+          </div>
+          <div class="item-actions">
+            ${actions}
+          </div>
+        </li>
+      `;
+    }).join('');
+  }
+
+  function renderLinkRequests() {
+    const list = document.getElementById('linkRequestList');
+    const filter = document.getElementById('linkRequestFilter').value;
+
+    let linkRequests = requests.links || [];
+    if (filter !== 'all') {
+      linkRequests = linkRequests.filter(r => r.status === filter);
+    }
+
+    if (linkRequests.length === 0) {
+      list.innerHTML = `<li class="no-items">No ${filter === 'all' ? '' : filter + ' '}link requests</li>`;
+      return;
+    }
+
+    list.innerHTML = linkRequests.map(req => {
+      const date = new Date(req.submittedAt).toLocaleDateString();
+      const statusClass = req.status === 'approved' ? 'status-approved' : req.status === 'denied' ? 'status-denied' : 'status-pending';
+
+      // Get category name
+      let categoryName = 'Unknown';
+      if (req.categoryId) {
+        const cat = appConfig.categories.find(c => c.id === req.categoryId);
+        categoryName = cat ? cat.name : 'Unknown';
+      } else if (req.pendingCategoryId) {
+        const pendingCat = requests.categories.find(c => c.id === req.pendingCategoryId);
+        categoryName = pendingCat ? `${pendingCat.name} (pending)` : 'Pending category';
+      }
+
+      const tags = (req.tags || []).join(', ');
+
+      let actions = '';
+      if (req.status === 'pending') {
+        const canApprove = req.categoryId || (req.pendingCategoryId && requests.categories.find(c => c.id === req.pendingCategoryId && c.status === 'approved'));
+        if (canApprove) {
+          actions = `
+            <button class="btn btn-sm btn-success" onclick="approveLinkRequest('${req.id}')">Approve</button>
+            <button class="btn btn-sm btn-danger" onclick="denyLinkRequest('${req.id}')">Deny</button>
+          `;
+        } else {
+          actions = `
+            <button class="btn btn-sm btn-success" disabled title="Approve the category first">Approve</button>
+            <button class="btn btn-sm btn-danger" onclick="denyLinkRequest('${req.id}')">Deny</button>
+          `;
+        }
+      } else {
+        actions = `
+          <button class="btn btn-sm btn-danger" onclick="deleteLinkRequest('${req.id}')">Delete</button>
+        `;
+      }
+
+      return `
+        <li class="item-list-item">
+          <div class="item-info">
+            <div class="item-name">${escapeHtml(req.name)}</div>
+            <div class="item-meta">
+              <span class="request-status ${statusClass}">${req.status}</span>
+              ${escapeHtml(req.url)} | ${escapeHtml(categoryName)}${tags ? ' | ' + escapeHtml(tags) : ''}
+            </div>
+            <div class="item-meta">Submitted: ${date} by ${escapeHtml(req.submittedBy || 'anonymous')}</div>
+          </div>
+          <div class="item-actions">
+            ${actions}
+          </div>
+        </li>
+      `;
+    }).join('');
+  }
+
+  // Approve category request
+  window.approveCategoryRequest = async function(id) {
+    try {
+      const response = await fetch(`/api/admin/requests/category/${id}/approve`, {
+        method: 'POST'
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to approve');
+      }
+
+      await loadRequests();
+      await loadConfig();
+      renderRequests();
+      updateRequestsBadge();
+      populateCategorySelects();
+      renderCategories();
+      showToast('Category request approved');
+    } catch (err) {
+      showToast(err.message || 'Failed to approve request', true);
+    }
+  };
+
+  // Approve link request
+  window.approveLinkRequest = async function(id) {
+    try {
+      const response = await fetch(`/api/admin/requests/link/${id}/approve`, {
+        method: 'POST'
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to approve');
+      }
+
+      await loadRequests();
+      await loadConfig();
+      renderRequests();
+      updateRequestsBadge();
+      renderLinks();
+      showToast('Link request approved');
+    } catch (err) {
+      showToast(err.message || 'Failed to approve request', true);
+    }
+  };
+
+  // Deny category request
+  window.denyCategoryRequest = async function(id) {
+    if (!confirm('Deny this category request? Any link requests that depend on this category will also be denied.')) return;
+
+    try {
+      const response = await fetch(`/api/admin/requests/category/${id}/deny`, {
+        method: 'POST'
+      });
+      if (!response.ok) throw new Error('Failed to deny');
+
+      await loadRequests();
+      renderRequests();
+      updateRequestsBadge();
+      showToast('Category request denied');
+    } catch (err) {
+      showToast('Failed to deny request', true);
+    }
+  };
+
+  // Deny link request
+  window.denyLinkRequest = async function(id) {
+    if (!confirm('Deny this link request?')) return;
+
+    try {
+      const response = await fetch(`/api/admin/requests/link/${id}/deny`, {
+        method: 'POST'
+      });
+      if (!response.ok) throw new Error('Failed to deny');
+
+      await loadRequests();
+      renderRequests();
+      updateRequestsBadge();
+      showToast('Link request denied');
+    } catch (err) {
+      showToast('Failed to deny request', true);
+    }
+  };
+
+  // Delete category request
+  window.deleteCategoryRequest = async function(id) {
+    if (!confirm('Delete this category request?')) return;
+
+    try {
+      const response = await fetch(`/api/admin/requests/category/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete');
+
+      await loadRequests();
+      renderRequests();
+      updateRequestsBadge();
+      showToast('Category request deleted');
+    } catch (err) {
+      showToast('Failed to delete request', true);
+    }
+  };
+
+  // Delete link request
+  window.deleteLinkRequest = async function(id) {
+    if (!confirm('Delete this link request?')) return;
+
+    try {
+      const response = await fetch(`/api/admin/requests/link/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete');
+
+      await loadRequests();
+      renderRequests();
+      updateRequestsBadge();
+      showToast('Link request deleted');
+    } catch (err) {
+      showToast('Failed to delete request', true);
+    }
+  };
 
   // Start
   document.addEventListener('DOMContentLoaded', init);

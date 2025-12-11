@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request - Dashma</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #212121;
+      color: #ffffff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .site-title {
+      font-size: 1.8rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .page-subtitle {
+      color: #888888;
+      font-size: 0.9rem;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #888888;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .back-link:hover {
+      color: #ffffff;
+    }
+    .forms-container {
+      display: grid;
+      gap: 30px;
+    }
+    @media (min-width: 768px) {
+      .forms-container {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    .form-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 30px;
+    }
+    .form-title {
+      font-size: 1.1rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #888888;
+    }
+    .form-input, .form-select {
+      width: 100%;
+      padding: 12px 14px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      color: #ffffff;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    .form-input:focus, .form-select:focus {
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    .form-select option {
+      background: #212121;
+      color: #ffffff;
+    }
+    .form-hint {
+      font-size: 0.75rem;
+      color: #666666;
+      margin-top: 4px;
+    }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      color: #ffffff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .message {
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    .message.success {
+      background: rgba(0, 200, 100, 0.2);
+      border: 1px solid rgba(0, 200, 100, 0.3);
+    }
+    .message.error {
+      background: rgba(255, 0, 0, 0.2);
+      border: 1px solid rgba(255, 0, 0, 0.3);
+    }
+    .hidden { display: none; }
+    .pending-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      background: rgba(255, 200, 0, 0.3);
+      border-radius: 4px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .category-option-group {
+      font-weight: bold;
+      color: #888888;
+    }
+    .session-requests {
+      margin-top: 30px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+    }
+    .session-requests h3 {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #888888;
+      margin-bottom: 15px;
+    }
+    .request-item {
+      padding: 10px;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    .request-type {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: #666666;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">&larr; Back to Dashboard</a>
+
+    <header>
+      <h1 class="site-title" id="site-title">Dashma</h1>
+      <p class="page-subtitle">Submit a request for a new category or link</p>
+    </header>
+
+    <div class="forms-container">
+      <!-- Category Request Form -->
+      <div class="form-card">
+        <h2 class="form-title">Request Category</h2>
+        <div id="category-message" class="message hidden"></div>
+        <form id="category-form">
+          <div class="form-group">
+            <label class="form-label" for="category-name">Category Name</label>
+            <input type="text" id="category-name" class="form-input" placeholder="e.g., Development Tools" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="category-submitter">Your Name (optional)</label>
+            <input type="text" id="category-submitter" class="form-input" placeholder="Anonymous">
+          </div>
+          <button type="submit" class="btn" id="category-submit">Submit Category Request</button>
+        </form>
+      </div>
+
+      <!-- Link Request Form -->
+      <div class="form-card">
+        <h2 class="form-title">Request Link</h2>
+        <div id="link-message" class="message hidden"></div>
+        <form id="link-form">
+          <div class="form-group">
+            <label class="form-label" for="link-name">Link Name</label>
+            <input type="text" id="link-name" class="form-input" placeholder="e.g., GitHub" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="link-url">URL</label>
+            <input type="url" id="link-url" class="form-input" placeholder="https://example.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="link-category">Category</label>
+            <select id="link-category" class="form-select" required>
+              <option value="">Select a category...</option>
+            </select>
+            <p class="form-hint">Select an existing category or a pending category you've requested</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="link-tags">Tags (optional)</label>
+            <input type="text" id="link-tags" class="form-input" placeholder="e.g., code, git, development">
+            <p class="form-hint">Comma-separated list of tags</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="link-submitter">Your Name (optional)</label>
+            <input type="text" id="link-submitter" class="form-input" placeholder="Anonymous">
+          </div>
+          <button type="submit" class="btn" id="link-submit">Submit Link Request</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Session Requests -->
+    <div id="session-requests" class="session-requests hidden">
+      <h3>Your Pending Requests This Session</h3>
+      <div id="session-requests-list"></div>
+    </div>
+  </div>
+
+  <script>
+    // Track requests made in this session
+    const sessionRequests = {
+      categories: [],
+      links: []
+    };
+
+    // Load categories and settings
+    async function loadData() {
+      try {
+        // Load settings for site name
+        const publicData = await fetch('/api/public/data').then(r => r.json());
+        document.getElementById('site-title').textContent = publicData.settings.siteName || 'Dashma';
+        document.title = (publicData.settings.siteName || 'Dashma') + ' - Request';
+
+        // Load categories for dropdown
+        await refreshCategories();
+      } catch (err) {
+        console.error('Failed to load data:', err);
+      }
+    }
+
+    async function refreshCategories() {
+      try {
+        const data = await fetch('/api/public/categories-for-request').then(r => r.json());
+        const select = document.getElementById('link-category');
+
+        // Keep the first default option
+        select.innerHTML = '<option value="">Select a category...</option>';
+
+        // Add existing categories
+        if (data.categories.length > 0) {
+          const existingGroup = document.createElement('optgroup');
+          existingGroup.label = 'Existing Categories';
+          data.categories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat.id;
+            option.textContent = cat.name;
+            option.dataset.type = 'existing';
+            existingGroup.appendChild(option);
+          });
+          select.appendChild(existingGroup);
+        }
+
+        // Combine server pending + session pending (deduplicate)
+        const allPending = [...data.pendingCategories];
+        sessionRequests.categories.forEach(sessionCat => {
+          if (!allPending.find(p => p.id === sessionCat.id)) {
+            allPending.push(sessionCat);
+          }
+        });
+
+        // Add pending categories
+        if (allPending.length > 0) {
+          const pendingGroup = document.createElement('optgroup');
+          pendingGroup.label = 'Pending Categories';
+          allPending.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = 'pending:' + cat.id;
+            option.textContent = cat.name + ' (pending approval)';
+            option.dataset.type = 'pending';
+            option.dataset.pendingId = cat.id;
+            pendingGroup.appendChild(option);
+          });
+          select.appendChild(pendingGroup);
+        }
+      } catch (err) {
+        console.error('Failed to load categories:', err);
+      }
+    }
+
+    function showMessage(elementId, message, isError = false) {
+      const el = document.getElementById(elementId);
+      el.textContent = message;
+      el.className = 'message ' + (isError ? 'error' : 'success');
+      el.classList.remove('hidden');
+
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        el.classList.add('hidden');
+      }, 5000);
+    }
+
+    function updateSessionRequestsDisplay() {
+      const container = document.getElementById('session-requests');
+      const list = document.getElementById('session-requests-list');
+
+      if (sessionRequests.categories.length === 0 && sessionRequests.links.length === 0) {
+        container.classList.add('hidden');
+        return;
+      }
+
+      container.classList.remove('hidden');
+      list.innerHTML = '';
+
+      sessionRequests.categories.forEach(cat => {
+        const item = document.createElement('div');
+        item.className = 'request-item';
+        item.innerHTML = `<div class="request-type">Category</div><div>${cat.name}</div>`;
+        list.appendChild(item);
+      });
+
+      sessionRequests.links.forEach(link => {
+        const item = document.createElement('div');
+        item.className = 'request-item';
+        item.innerHTML = `<div class="request-type">Link</div><div>${link.name} - ${link.url}</div>`;
+        list.appendChild(item);
+      });
+    }
+
+    // Category form submission
+    document.getElementById('category-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('category-submit');
+      submitBtn.disabled = true;
+
+      const name = document.getElementById('category-name').value.trim();
+      const submittedBy = document.getElementById('category-submitter').value.trim() || 'anonymous';
+
+      try {
+        const response = await fetch('/api/public/request/category', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, submittedBy })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to submit request');
+        }
+
+        // Add to session requests
+        sessionRequests.categories.push(result);
+        updateSessionRequestsDisplay();
+
+        // Refresh category dropdown
+        await refreshCategories();
+
+        showMessage('category-message', 'Category request submitted successfully!');
+        document.getElementById('category-form').reset();
+      } catch (err) {
+        showMessage('category-message', err.message, true);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    // Link form submission
+    document.getElementById('link-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('link-submit');
+      submitBtn.disabled = true;
+
+      const name = document.getElementById('link-name').value.trim();
+      const url = document.getElementById('link-url').value.trim();
+      const categoryValue = document.getElementById('link-category').value;
+      const tagsInput = document.getElementById('link-tags').value.trim();
+      const submittedBy = document.getElementById('link-submitter').value.trim() || 'anonymous';
+
+      // Parse category selection
+      let categoryId = null;
+      let pendingCategoryId = null;
+
+      if (categoryValue.startsWith('pending:')) {
+        pendingCategoryId = categoryValue.replace('pending:', '');
+      } else {
+        categoryId = categoryValue;
+      }
+
+      // Parse tags
+      const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
+
+      try {
+        const response = await fetch('/api/public/request/link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, url, categoryId, pendingCategoryId, tags, submittedBy })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to submit request');
+        }
+
+        // Add to session requests
+        sessionRequests.links.push(result);
+        updateSessionRequestsDisplay();
+
+        showMessage('link-message', 'Link request submitted successfully!');
+        document.getElementById('link-form').reset();
+      } catch (err) {
+        showMessage('link-message', err.message, true);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    // Initialize
+    loadData();
+  </script>
+</body>
+</html>

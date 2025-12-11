@@ -542,6 +542,127 @@ async function registerRoutes(fastify) {
       config.deleteUser(request.params.id);
       return { success: true };
     });
+
+    // Request management (admin)
+    fastify.get('/api/admin/requests', async () => {
+      return config.getRequests();
+    });
+
+    fastify.post('/api/admin/requests/category/:id/approve', async (request, reply) => {
+      try {
+        const result = config.approveCategoryRequest(request.params.id, request.session.username);
+        return result;
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
+    });
+
+    fastify.post('/api/admin/requests/link/:id/approve', async (request, reply) => {
+      try {
+        const result = config.approveLinkRequest(request.params.id, request.session.username);
+        return result;
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
+    });
+
+    fastify.post('/api/admin/requests/category/:id/deny', async (request, reply) => {
+      try {
+        const result = config.denyRequest('category', request.params.id, request.session.username);
+        return result;
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
+    });
+
+    fastify.post('/api/admin/requests/link/:id/deny', async (request, reply) => {
+      try {
+        const result = config.denyRequest('link', request.params.id, request.session.username);
+        return result;
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
+    });
+
+    fastify.delete('/api/admin/requests/category/:id', async (request) => {
+      config.deleteRequest('category', request.params.id);
+      return { success: true };
+    });
+
+    fastify.delete('/api/admin/requests/link/:id', async (request) => {
+      config.deleteRequest('link', request.params.id);
+      return { success: true };
+    });
+  });
+
+  // Public request submission page
+  fastify.get('/request', async (request, reply) => {
+    return reply.sendFile('request.html');
+  });
+
+  // Public API for submitting requests (no auth required)
+  fastify.get('/api/public/categories-for-request', async () => {
+    // Return both existing categories and pending category requests
+    const categories = config.getCategories();
+    const pendingCategories = config.getPendingCategoryRequests();
+    return {
+      categories: categories,
+      pendingCategories: pendingCategories
+    };
+  });
+
+  fastify.post('/api/public/request/category', async (request, reply) => {
+    const { name, submittedBy } = request.body;
+    if (!name || !name.trim()) {
+      return reply.code(400).send({ error: 'Category name is required' });
+    }
+
+    // Check if category already exists
+    const existing = config.getCategories().find(c => c.name.toLowerCase() === name.toLowerCase().trim());
+    if (existing) {
+      return reply.code(400).send({ error: 'A category with this name already exists' });
+    }
+
+    // Check if there's already a pending request for this category
+    const pendingRequests = config.getPendingCategoryRequests();
+    const pendingExisting = pendingRequests.find(r => r.name.toLowerCase() === name.toLowerCase().trim());
+    if (pendingExisting) {
+      return reply.code(400).send({ error: 'A request for this category is already pending' });
+    }
+
+    const result = config.addCategoryRequest({ name: name.trim() }, submittedBy || 'anonymous');
+    return result;
+  });
+
+  fastify.post('/api/public/request/link', async (request, reply) => {
+    const { name, url, categoryId, pendingCategoryId, tags, submittedBy } = request.body;
+
+    if (!name || !name.trim()) {
+      return reply.code(400).send({ error: 'Link name is required' });
+    }
+    if (!url || !url.trim()) {
+      return reply.code(400).send({ error: 'URL is required' });
+    }
+    if (!categoryId && !pendingCategoryId) {
+      return reply.code(400).send({ error: 'Category is required' });
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch (err) {
+      return reply.code(400).send({ error: 'Invalid URL format' });
+    }
+
+    const result = config.addLinkRequest({
+      name: name.trim(),
+      url: url.trim(),
+      categoryId: categoryId || null,
+      pendingCategoryId: pendingCategoryId || null,
+      tags: tags || []
+    }, submittedBy || 'anonymous');
+
+    return result;
   });
 }
 

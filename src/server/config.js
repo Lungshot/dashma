@@ -37,7 +37,11 @@ const defaultConfig = {
   },
   users: [], // Regular users for main site auth: { id, username, passwordHash, createdAt }
   categories: [],
-  links: []
+  links: [],
+  requests: {
+    categories: [], // { id, name, status: 'pending'|'approved'|'denied', submittedAt, submittedBy, reviewedAt, reviewedBy }
+    links: [] // { id, name, url, categoryId, tags, status: 'pending'|'approved'|'denied', submittedAt, submittedBy, reviewedAt, reviewedBy }
+  }
 };
 
 let configCache = null;
@@ -322,6 +326,157 @@ function importConfig(newConfig) {
   saveConfig();
 }
 
+// Request management functions
+function getRequests() {
+  const config = getConfig();
+  if (!config.requests) {
+    config.requests = { categories: [], links: [] };
+    saveConfig();
+  }
+  return config.requests;
+}
+
+function addCategoryRequest(categoryData, submittedBy = 'anonymous') {
+  const config = getConfig();
+  if (!config.requests) {
+    config.requests = { categories: [], links: [] };
+  }
+
+  const newRequest = {
+    id: uuidv4(),
+    name: categoryData.name,
+    status: 'pending',
+    submittedAt: new Date().toISOString(),
+    submittedBy: submittedBy,
+    reviewedAt: null,
+    reviewedBy: null
+  };
+
+  config.requests.categories.push(newRequest);
+  saveConfig();
+  return newRequest;
+}
+
+function addLinkRequest(linkData, submittedBy = 'anonymous') {
+  const config = getConfig();
+  if (!config.requests) {
+    config.requests = { categories: [], links: [] };
+  }
+
+  const newRequest = {
+    id: uuidv4(),
+    name: linkData.name,
+    url: linkData.url,
+    categoryId: linkData.categoryId,
+    pendingCategoryId: linkData.pendingCategoryId || null, // Reference to pending category request
+    tags: linkData.tags || [],
+    status: 'pending',
+    submittedAt: new Date().toISOString(),
+    submittedBy: submittedBy,
+    reviewedAt: null,
+    reviewedBy: null
+  };
+
+  config.requests.links.push(newRequest);
+  saveConfig();
+  return newRequest;
+}
+
+function approveCategoryRequest(requestId, reviewedBy = 'admin') {
+  const config = getConfig();
+  const request = config.requests.categories.find(r => r.id === requestId);
+  if (!request) throw new Error('Request not found');
+
+  // Create the actual category
+  const newCategory = addCategory({ name: request.name });
+
+  // Update request status
+  request.status = 'approved';
+  request.reviewedAt = new Date().toISOString();
+  request.reviewedBy = reviewedBy;
+  request.approvedCategoryId = newCategory.id;
+
+  // Update any pending link requests that reference this category
+  config.requests.links.forEach(linkReq => {
+    if (linkReq.pendingCategoryId === requestId) {
+      linkReq.categoryId = newCategory.id;
+      linkReq.pendingCategoryId = null;
+    }
+  });
+
+  saveConfig();
+  return { request, category: newCategory };
+}
+
+function approveLinkRequest(requestId, reviewedBy = 'admin') {
+  const config = getConfig();
+  const request = config.requests.links.find(r => r.id === requestId);
+  if (!request) throw new Error('Request not found');
+
+  // Check if categoryId is valid
+  if (!request.categoryId) {
+    throw new Error('Link request has no valid category. Approve the category request first.');
+  }
+
+  // Create the actual link
+  const newLink = addLink({
+    name: request.name,
+    url: request.url,
+    categoryId: request.categoryId,
+    tags: request.tags
+  });
+
+  // Update request status
+  request.status = 'approved';
+  request.reviewedAt = new Date().toISOString();
+  request.reviewedBy = reviewedBy;
+  request.approvedLinkId = newLink.id;
+
+  saveConfig();
+  return { request, link: newLink };
+}
+
+function denyRequest(type, requestId, reviewedBy = 'admin') {
+  const config = getConfig();
+  const requestList = type === 'category' ? config.requests.categories : config.requests.links;
+  const request = requestList.find(r => r.id === requestId);
+  if (!request) throw new Error('Request not found');
+
+  request.status = 'denied';
+  request.reviewedAt = new Date().toISOString();
+  request.reviewedBy = reviewedBy;
+
+  // If denying a category, also deny any link requests that depend on it
+  if (type === 'category') {
+    config.requests.links.forEach(linkReq => {
+      if (linkReq.pendingCategoryId === requestId && linkReq.status === 'pending') {
+        linkReq.status = 'denied';
+        linkReq.reviewedAt = new Date().toISOString();
+        linkReq.reviewedBy = reviewedBy;
+      }
+    });
+  }
+
+  saveConfig();
+  return request;
+}
+
+function deleteRequest(type, requestId) {
+  const config = getConfig();
+  if (type === 'category') {
+    config.requests.categories = config.requests.categories.filter(r => r.id !== requestId);
+  } else {
+    config.requests.links = config.requests.links.filter(r => r.id !== requestId);
+  }
+  saveConfig();
+}
+
+function getPendingCategoryRequests() {
+  const config = getConfig();
+  if (!config.requests) return [];
+  return config.requests.categories.filter(r => r.status === 'pending');
+}
+
 module.exports = {
   loadConfig,
   getConfig,
@@ -347,5 +502,14 @@ module.exports = {
   deleteUser,
   verifyUser,
   exportConfig,
-  importConfig
+  importConfig,
+  // Request management
+  getRequests,
+  addCategoryRequest,
+  addLinkRequest,
+  approveCategoryRequest,
+  approveLinkRequest,
+  denyRequest,
+  deleteRequest,
+  getPendingCategoryRequests
 };
