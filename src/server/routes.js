@@ -46,24 +46,28 @@ function fetchImage(url, timeout = 3000) {
 }
 
 // Extract app name variants from a link title for fuzzy matching
-// "Portainer - Local" -> ["portainer-local", "portainer"]
-// "SFTP-GO" -> ["sftp-go", "sftpgo", "sftp"]
-// "Mimecast University" -> ["mimecast-university", "mimecast"]
+// "Portainer - Local" -> ["portainerlocal", "portainer-local", "portainer"]
+// "SFTP-GO" -> ["sftpgo", "sftp-go", "sftp"]
+// "Arctic Wolf" -> ["arcticwolf", "arctic-wolf", "arctic"]
+// Note: No-hyphen version comes FIRST for domain lookups (arcticwolf.com not arctic-wolf.com)
 function getAppNameVariants(appName) {
   if (!appName) return [];
 
   const variants = [];
   const cleaned = appName.toLowerCase().trim();
 
-  // Full name as slug
+  // Full name as slug (with hyphens)
   const fullSlug = cleaned.replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  if (fullSlug) variants.push(fullSlug);
 
-  // Without hyphens (e.g., "sftp-go" -> "sftpgo")
+  // Without hyphens FIRST (e.g., "arcticwolf" before "arctic-wolf")
+  // This is important because arcticwolf.com is correct, arctic-wolf.com is wrong
   const noHyphens = fullSlug.replace(/-/g, '');
-  if (noHyphens && noHyphens !== fullSlug) variants.push(noHyphens);
+  if (noHyphens) variants.push(noHyphens);
 
-  // First word only (most important - usually the app name)
+  // Then with hyphens
+  if (fullSlug && fullSlug !== noHyphens) variants.push(fullSlug);
+
+  // First word only (usually the app name)
   const firstWord = cleaned.split(/[\s\-_:,]+/)[0].replace(/[^a-z0-9]/g, '');
   if (firstWord && firstWord !== fullSlug && firstWord !== noHyphens) {
     variants.push(firstWord);
@@ -117,7 +121,22 @@ async function registerRoutes(fastify) {
       if (result) return sendImage(result);
     }
 
-    // 2. Try domain-based sources (only if not an IP address)
+    // 2. Try app name as domain FIRST (e.g., "arcticwolf.com" for "Arctic Wolf")
+    // This catches cases where the URL is a subdomain but the main domain has the favicon
+    if (appVariants.length > 0) {
+      for (const variant of appVariants) {
+        const brandDomain = `${variant}.com`;
+        // Skip only if the variant domain is exactly the same as the URL domain
+        // (allow trying arcticwolf.com when URL is dashboard.arcticwolf.com)
+        if (brandDomain !== domain) {
+          const googleBrandUrl = `https://www.google.com/s2/favicons?domain=${brandDomain}&sz=64`;
+          const googleResult = await fetchImage(googleBrandUrl, 2000);
+          if (googleResult) return sendImage(googleResult);
+        }
+      }
+    }
+
+    // 3. Try domain-based sources (only if not an IP address)
     if (!isIpAddress) {
       const domainSources = [
         `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
@@ -131,20 +150,13 @@ async function registerRoutes(fastify) {
       }
     }
 
-    // 3. Try searching by first word of app name on common brand icon services
+    // 4. Try Simple Icons with different variants
     if (appVariants.length > 0) {
-      const firstWord = appVariants[appVariants.length - 1]; // Last variant is usually the first word
-
-      // Try Simple Icons (brand logos)
-      const simpleIconsUrl = `https://cdn.simpleicons.org/${firstWord}`;
-      const simpleResult = await fetchImage(simpleIconsUrl, 2000);
-      if (simpleResult) return sendImage(simpleResult);
-
-      // Try searching Google for the brand favicon
-      const brandDomain = `${firstWord}.com`;
-      const googleBrandUrl = `https://www.google.com/s2/favicons?domain=${brandDomain}&sz=64`;
-      const googleResult = await fetchImage(googleBrandUrl, 2000);
-      if (googleResult) return sendImage(googleResult);
+      for (const variant of appVariants) {
+        const simpleIconsUrl = `https://cdn.simpleicons.org/${variant}`;
+        const simpleResult = await fetchImage(simpleIconsUrl, 2000);
+        if (simpleResult) return sendImage(simpleResult);
+      }
     }
 
     // 4. Final fallback - return a generic icon or Google's default
