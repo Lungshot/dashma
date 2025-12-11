@@ -849,6 +849,14 @@
   async function exportConfig() {
     try {
       const response = await fetch('/api/admin/export');
+      if (!response.ok) {
+        if (response.status === 401) {
+          showToast('Session expired. Please log in again.', true);
+          window.location.href = '/admin/login';
+          return;
+        }
+        throw new Error('Export failed');
+      }
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
