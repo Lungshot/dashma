@@ -167,6 +167,7 @@
     // Background image upload
     setupFileUpload('bgImageUpload', 'bgImageInput', handleBgImageUpload);
     document.getElementById('clearBgImage').addEventListener('click', clearBgImage);
+    document.getElementById('resetColors').addEventListener('click', resetColors);
 
     // Logo upload
     setupFileUpload('logoImageUpload', 'logoImageInput', handleLogoImageUpload);
@@ -514,6 +515,49 @@
     } catch (err) {
       showToast('Failed to clear image', true);
     }
+  }
+
+  // Reset colors to default
+  function resetColors() {
+    const defaults = {
+      backgroundColor: '#212121',
+      textColor: '#ffffff',
+      accentColor: '#888888',
+      categoryBgColor: 'rgba(255,255,255,0.03)',
+      categoryTitleColor: '#ffffff',
+      linkCardBgColor: 'rgba(255,255,255,0.05)',
+      tagBgColor: 'rgba(255,255,255,0.1)'
+    };
+
+    // Update form fields
+    document.getElementById('backgroundColor').value = defaults.backgroundColor;
+    document.getElementById('bgColorPicker').value = defaults.backgroundColor;
+    document.getElementById('textColor').value = defaults.textColor;
+    document.getElementById('textColorPicker').value = defaults.textColor;
+    document.getElementById('accentColor').value = defaults.accentColor;
+    document.getElementById('accentColorPicker').value = defaults.accentColor;
+    document.getElementById('categoryBgColor').value = defaults.categoryBgColor;
+    document.getElementById('categoryBgColorPicker').value = rgbaToHex(defaults.categoryBgColor);
+    document.getElementById('categoryTitleColor').value = defaults.categoryTitleColor;
+    document.getElementById('categoryTitleColorPicker').value = defaults.categoryTitleColor;
+    document.getElementById('linkCardBgColor').value = defaults.linkCardBgColor;
+    document.getElementById('linkCardBgColorPicker').value = rgbaToHex(defaults.linkCardBgColor);
+    document.getElementById('tagBgColor').value = defaults.tagBgColor;
+    document.getElementById('tagBgColorPicker').value = rgbaToHex(defaults.tagBgColor);
+
+    showToast('Colors reset to defaults (click Save to apply)');
+  }
+
+  // Convert rgba to hex for color picker (approximation)
+  function rgbaToHex(rgba) {
+    const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+      const r = parseInt(match[1]).toString(16).padStart(2, '0');
+      const g = parseInt(match[2]).toString(16).padStart(2, '0');
+      const b = parseInt(match[3]).toString(16).padStart(2, '0');
+      return `#${r}${g}${b}`;
+    }
+    return '#ffffff';
   }
 
   // Toggle logo upload visibility based on mode
