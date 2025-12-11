@@ -292,6 +292,12 @@
         closeSearch();
       }
     });
+
+    // Mobile search button
+    const mobileSearchBtn = document.querySelector('.mobile-search-btn');
+    if (mobileSearchBtn) {
+      mobileSearchBtn.addEventListener('click', openSearch);
+    }
   }
 
   // Handle global keyboard shortcuts
