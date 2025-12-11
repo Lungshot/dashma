@@ -1,7 +1,49 @@
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
+const http = require('http');
 const config = require('./config');
 const auth = require('./auth');
+
+// Helper to fetch a URL and check if it returns a valid image
+function fetchImage(url) {
+  return new Promise((resolve) => {
+    const protocol = url.startsWith('https') ? https : http;
+    const request = protocol.get(url, { timeout: 5000 }, (response) => {
+      // Follow redirects
+      if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+        fetchImage(response.headers.location).then(resolve);
+        return;
+      }
+
+      if (response.statusCode !== 200) {
+        resolve(null);
+        return;
+      }
+
+      const contentType = response.headers['content-type'] || '';
+      const chunks = [];
+
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        // Check if we got actual image data (not empty or error page)
+        if (buffer.length > 100 && (contentType.includes('image') || buffer[0] === 0x89 || buffer[0] === 0x47 || buffer[0] === 0xFF || buffer[0] === 0x00)) {
+          resolve({ buffer, contentType });
+        } else {
+          resolve(null);
+        }
+      });
+      response.on('error', () => resolve(null));
+    });
+
+    request.on('error', () => resolve(null));
+    request.on('timeout', () => {
+      request.destroy();
+      resolve(null);
+    });
+  });
+}
 
 async function registerRoutes(fastify) {
   
@@ -14,19 +56,50 @@ async function registerRoutes(fastify) {
     };
   });
 
-  // Favicon proxy - fetch favicon for a URL
+  // Favicon proxy - fetch favicon for a URL with fallback chain
   fastify.get('/api/favicon', async (request, reply) => {
-    const { url } = request.query;
+    const { url, app } = request.query;
     if (!url) {
       return reply.code(400).send({ error: 'URL required' });
     }
+
+    let domain;
     try {
-      const domain = new URL(url).hostname;
-      const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-      reply.redirect(faviconUrl);
+      domain = new URL(url).hostname;
     } catch (err) {
       return reply.code(400).send({ error: 'Invalid URL' });
     }
+
+    // Build sources list
+    const sources = [];
+
+    // If app name provided, try selfh.st icons first (for self-hosted apps)
+    if (app) {
+      const appSlug = app.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+      sources.push(`https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/${appSlug}.png`);
+    }
+
+    // Standard favicon sources
+    sources.push(
+      // 1. Google Favicons (fast, reliable)
+      `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+      // 2. favicon.allesedv.com (fetches actual site favicons)
+      `https://f1.allesedv.com/64/${domain}`,
+      // 3. DuckDuckGo icons
+      `https://icons.duckduckgo.com/ip3/${domain}.ico`
+    );
+
+    for (const sourceUrl of sources) {
+      const result = await fetchImage(sourceUrl);
+      if (result) {
+        reply.header('Content-Type', result.contentType || 'image/png');
+        reply.header('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+        return reply.send(result.buffer);
+      }
+    }
+
+    // If all sources fail, return a simple redirect to Google (as final fallback)
+    reply.redirect(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
   });
 
   // User login page (for main site auth)
