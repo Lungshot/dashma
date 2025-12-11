@@ -775,6 +775,51 @@ body {
   }
 }
 
+/* Mobile Search Button */
+.mobile-search-btn {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-color, #ffffff);
+  cursor: pointer;
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.mobile-search-btn:hover,
+.mobile-search-btn:focus {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.mobile-search-btn:active {
+  transform: scale(0.95);
+}
+
+/* Show on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .mobile-search-btn {
+    display: flex;
+  }
+}
+
+/* Also show on small screens regardless of touch capability */
+@media (max-width: 768px) {
+  .mobile-search-btn {
+    display: flex;
+  }
+}
+
 /* Footer */
 .site-footer {
   margin-top: 40px;
