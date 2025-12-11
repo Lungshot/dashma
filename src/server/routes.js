@@ -6,13 +6,13 @@ const config = require('./config');
 const auth = require('./auth');
 
 // Helper to fetch a URL and check if it returns a valid image
-function fetchImage(url) {
+function fetchImage(url, timeout = 3000) {
   return new Promise((resolve) => {
     const protocol = url.startsWith('https') ? https : http;
-    const request = protocol.get(url, { timeout: 5000 }, (response) => {
+    const request = protocol.get(url, { timeout }, (response) => {
       // Follow redirects
       if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-        fetchImage(response.headers.location).then(resolve);
+        fetchImage(response.headers.location, timeout).then(resolve);
         return;
       }
 
@@ -45,6 +45,33 @@ function fetchImage(url) {
   });
 }
 
+// Extract app name variants from a link title for fuzzy matching
+// "Portainer - Local" -> ["portainer-local", "portainer"]
+// "SFTP-GO" -> ["sftp-go", "sftpgo", "sftp"]
+// "Mimecast University" -> ["mimecast-university", "mimecast"]
+function getAppNameVariants(appName) {
+  if (!appName) return [];
+
+  const variants = [];
+  const cleaned = appName.toLowerCase().trim();
+
+  // Full name as slug
+  const fullSlug = cleaned.replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  if (fullSlug) variants.push(fullSlug);
+
+  // Without hyphens (e.g., "sftp-go" -> "sftpgo")
+  const noHyphens = fullSlug.replace(/-/g, '');
+  if (noHyphens && noHyphens !== fullSlug) variants.push(noHyphens);
+
+  // First word only (most important - usually the app name)
+  const firstWord = cleaned.split(/[\s\-_:,]+/)[0].replace(/[^a-z0-9]/g, '');
+  if (firstWord && firstWord !== fullSlug && firstWord !== noHyphens) {
+    variants.push(firstWord);
+  }
+
+  return variants;
+}
+
 async function registerRoutes(fastify) {
   
   // Public API - get settings and links for homepage
@@ -56,7 +83,7 @@ async function registerRoutes(fastify) {
     };
   });
 
-  // Favicon proxy - fetch favicon for a URL with fallback chain
+  // Favicon proxy - fetch favicon for a URL with fallback chain and fuzzy app name matching
   fastify.get('/api/favicon', async (request, reply) => {
     const { url, app } = request.query;
     if (!url) {
@@ -64,41 +91,63 @@ async function registerRoutes(fastify) {
     }
 
     let domain;
+    let isIpAddress = false;
     try {
       domain = new URL(url).hostname;
+      // Check if domain is an IP address
+      isIpAddress = /^(\d{1,3}\.){3}\d{1,3}$/.test(domain) || domain === 'localhost';
     } catch (err) {
       return reply.code(400).send({ error: 'Invalid URL' });
     }
 
-    // Build sources list
-    const sources = [];
+    // Get app name variants for fuzzy matching
+    const appVariants = getAppNameVariants(app);
 
-    // If app name provided, try selfh.st icons first (for self-hosted apps)
-    if (app) {
-      const appSlug = app.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
-      sources.push(`https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/${appSlug}.png`);
+    // Helper to send successful response
+    const sendImage = (result) => {
+      reply.header('Content-Type', result.contentType || 'image/png');
+      reply.header('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+      return reply.send(result.buffer);
+    };
+
+    // 1. Try selfh.st icons with fuzzy app name matching (fast, 2s timeout each)
+    for (const variant of appVariants) {
+      const selfhstUrl = `https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/${variant}.png`;
+      const result = await fetchImage(selfhstUrl, 2000);
+      if (result) return sendImage(result);
     }
 
-    // Standard favicon sources
-    sources.push(
-      // 1. Google Favicons (fast, reliable)
-      `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
-      // 2. favicon.allesedv.com (fetches actual site favicons)
-      `https://f1.allesedv.com/64/${domain}`,
-      // 3. DuckDuckGo icons
-      `https://icons.duckduckgo.com/ip3/${domain}.ico`
-    );
+    // 2. Try domain-based sources (only if not an IP address)
+    if (!isIpAddress) {
+      const domainSources = [
+        `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+        `https://f1.allesedv.com/64/${domain}`,
+        `https://icons.duckduckgo.com/ip3/${domain}.ico`
+      ];
 
-    for (const sourceUrl of sources) {
-      const result = await fetchImage(sourceUrl);
-      if (result) {
-        reply.header('Content-Type', result.contentType || 'image/png');
-        reply.header('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
-        return reply.send(result.buffer);
+      for (const sourceUrl of domainSources) {
+        const result = await fetchImage(sourceUrl, 2000);
+        if (result) return sendImage(result);
       }
     }
 
-    // If all sources fail, return a simple redirect to Google (as final fallback)
+    // 3. Try searching by first word of app name on common brand icon services
+    if (appVariants.length > 0) {
+      const firstWord = appVariants[appVariants.length - 1]; // Last variant is usually the first word
+
+      // Try Simple Icons (brand logos)
+      const simpleIconsUrl = `https://cdn.simpleicons.org/${firstWord}`;
+      const simpleResult = await fetchImage(simpleIconsUrl, 2000);
+      if (simpleResult) return sendImage(simpleResult);
+
+      // Try searching Google for the brand favicon
+      const brandDomain = `${firstWord}.com`;
+      const googleBrandUrl = `https://www.google.com/s2/favicons?domain=${brandDomain}&sz=64`;
+      const googleResult = await fetchImage(googleBrandUrl, 2000);
+      if (googleResult) return sendImage(googleResult);
+    }
+
+    // 4. Final fallback - return a generic icon or Google's default
     reply.redirect(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
   });
 
