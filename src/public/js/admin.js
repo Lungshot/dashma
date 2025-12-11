@@ -7,6 +7,70 @@
   let users = [];
   let requests = { categories: [], links: [] };
 
+  // Re-authentication handling
+  let pendingRequest = null;
+
+  // Wrapper for fetch that handles 401 responses
+  async function authFetch(url, options = {}) {
+    const response = await fetch(url, options);
+    if (response.status === 401) {
+      // Store the request details for retry
+      pendingRequest = { url, options };
+      showReAuthModal();
+      throw new Error('Authentication required');
+    }
+    return response;
+  }
+
+  function showReAuthModal() {
+    document.getElementById('reAuthModal').classList.add('active');
+    document.getElementById('reAuthUsername').focus();
+    document.getElementById('reAuthError').classList.add('hidden');
+  }
+
+  async function handleReAuth() {
+    const username = document.getElementById('reAuthUsername').value;
+    const password = document.getElementById('reAuthPassword').value;
+    const errorEl = document.getElementById('reAuthError');
+
+    if (!username || !password) {
+      errorEl.textContent = 'Please enter username and password';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        errorEl.textContent = data.error || 'Login failed';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      // Success - close modal and retry pending request
+      document.getElementById('reAuthModal').classList.remove('active');
+      document.getElementById('reAuthPassword').value = '';
+      showToast('Session restored');
+
+      // Retry the pending request if there was one
+      if (pendingRequest) {
+        const { url, options } = pendingRequest;
+        pendingRequest = null;
+        // The original caller will need to retry their action
+        showToast('Please retry your last action');
+      }
+    } catch (err) {
+      errorEl.textContent = 'Login failed: ' + err.message;
+      errorEl.classList.remove('hidden');
+    }
+  }
+
   // Initialize
   async function init() {
     await loadConfig();
@@ -25,11 +89,13 @@
   // Load configuration from API
   async function loadConfig() {
     try {
-      const response = await fetch('/api/admin/config');
+      const response = await authFetch('/api/admin/config');
       if (!response.ok) throw new Error('Failed to load config');
       appConfig = await response.json();
     } catch (err) {
-      showToast('Failed to load configuration', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to load configuration', true);
+      }
       console.error(err);
     }
   }
@@ -37,11 +103,13 @@
   // Load users
   async function loadUsers() {
     try {
-      const response = await fetch('/api/admin/users');
+      const response = await authFetch('/api/admin/users');
       if (!response.ok) throw new Error('Failed to load users');
       users = await response.json();
     } catch (err) {
-      console.error('Failed to load users:', err);
+      if (err.message !== 'Authentication required') {
+        console.error('Failed to load users:', err);
+      }
       users = [];
     }
   }
@@ -49,7 +117,7 @@
   // Load requests
   async function loadRequests() {
     try {
-      const response = await fetch('/api/admin/requests');
+      const response = await authFetch('/api/admin/requests');
       if (!response.ok) throw new Error('Failed to load requests');
       requests = await response.json();
     } catch (err) {
@@ -104,6 +172,13 @@
     setupFileUpload('logoImageUpload', 'logoImageInput', handleLogoImageUpload);
     document.getElementById('clearLogoImage').addEventListener('click', clearLogoImage);
     document.getElementById('siteLogoMode').addEventListener('change', toggleLogoUpload);
+    document.getElementById('showLogo').addEventListener('change', toggleLogoOptions);
+
+    // Re-authentication
+    document.getElementById('reAuthBtn').addEventListener('click', handleReAuth);
+    document.getElementById('reAuthPassword').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleReAuth();
+    });
 
     // Categories
     document.getElementById('addCategoryBtn').addEventListener('click', () => openCategoryModal());
@@ -222,6 +297,7 @@
     setSelectValue('logoPosition', s.logoPosition || 'above');
     setSelectValue('logoAlignment', s.logoAlignment || 'center');
     toggleLogoUpload();
+    toggleLogoOptions();
     if (s.siteLogo) {
       document.getElementById('logoImagePreview').innerHTML =
         `<img src="${s.siteLogo}" class="preview-image" alt="Logo" style="max-height: 60px;">`;
@@ -381,7 +457,7 @@
     };
 
     try {
-      const response = await fetch('/api/admin/settings', {
+      const response = await authFetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
@@ -394,7 +470,9 @@
       showToast('Appearance settings saved');
     } catch (err) {
       console.error('Save settings error:', err);
-      showToast(err.message || 'Failed to save settings', true);
+      if (err.message !== 'Authentication required') {
+        showToast(err.message || 'Failed to save settings', true);
+      }
     }
   }
 
@@ -404,26 +482,28 @@
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/admin/upload/background', {
+      const response = await authFetch('/api/admin/upload/background', {
         method: 'POST',
         body: formData
       });
       if (!response.ok) throw new Error('Upload failed');
       const result = await response.json();
-      
-      document.getElementById('bgImagePreview').innerHTML = 
+
+      document.getElementById('bgImagePreview').innerHTML =
         `<img src="${result.url}" class="preview-image" alt="Background">`;
       appConfig.settings.backgroundImage = result.url;
       showToast('Background image uploaded');
     } catch (err) {
-      showToast('Failed to upload image', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to upload image', true);
+      }
     }
   }
 
   // Clear background image
   async function clearBgImage() {
     try {
-      await fetch('/api/admin/settings', {
+      await authFetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ backgroundImage: null })
@@ -443,13 +523,19 @@
     uploadSection.style.display = mode === 'custom' ? 'block' : 'none';
   }
 
+  function toggleLogoOptions() {
+    const showLogo = document.getElementById('showLogo').checked;
+    const logoOptions = document.getElementById('logoOptionsContainer');
+    logoOptions.style.display = showLogo ? 'block' : 'none';
+  }
+
   // Handle logo image upload
   async function handleLogoImageUpload(file) {
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/admin/upload/logo', {
+      const response = await authFetch('/api/admin/upload/logo', {
         method: 'POST',
         body: formData
       });
@@ -461,14 +547,16 @@
       appConfig.settings.siteLogo = result.url;
       showToast('Logo image uploaded');
     } catch (err) {
-      showToast('Failed to upload logo', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to upload logo', true);
+      }
     }
   }
 
   // Clear logo image
   async function clearLogoImage() {
     try {
-      await fetch('/api/admin/settings', {
+      await authFetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ siteLogo: null })
@@ -477,7 +565,9 @@
       appConfig.settings.siteLogo = null;
       showToast('Logo image cleared');
     } catch (err) {
-      showToast('Failed to clear logo', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to clear logo', true);
+      }
     }
   }
 
@@ -656,13 +746,13 @@
     try {
       let response;
       if (id) {
-        response = await fetch(`/api/admin/categories/${id}`, {
+        response = await authFetch(`/api/admin/categories/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name })
         });
       } else {
-        response = await fetch('/api/admin/categories', {
+        response = await authFetch('/api/admin/categories', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name })
@@ -670,14 +760,16 @@
       }
 
       if (!response.ok) throw new Error('Failed to save');
-      
+
       await loadConfig();
       renderCategories();
       populateCategorySelects();
       closeModal('categoryModal');
       showToast(id ? 'Category updated' : 'Category created');
     } catch (err) {
-      showToast('Failed to save category', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to save category', true);
+      }
     }
   }
 
@@ -686,18 +778,20 @@
     if (!confirm('Delete this category and all its links?')) return;
 
     try {
-      const response = await fetch(`/api/admin/categories/${id}`, {
+      const response = await authFetch(`/api/admin/categories/${id}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to delete');
-      
+
       await loadConfig();
       renderCategories();
       renderLinks();
       populateCategorySelects();
       showToast('Category deleted');
     } catch (err) {
-      showToast('Failed to delete category', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to delete category', true);
+      }
     }
   };
 
@@ -811,13 +905,13 @@
     try {
       let response;
       if (id) {
-        response = await fetch(`/api/admin/links/${id}`, {
+        response = await authFetch(`/api/admin/links/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(linkData)
         });
       } else {
-        response = await fetch('/api/admin/links', {
+        response = await authFetch('/api/admin/links', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(linkData)
@@ -825,13 +919,15 @@
       }
 
       if (!response.ok) throw new Error('Failed to save');
-      
+
       await loadConfig();
       renderLinks();
       closeModal('linkModal');
       showToast(id ? 'Link updated' : 'Link created');
     } catch (err) {
-      showToast('Failed to save link', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to save link', true);
+      }
     }
   }
 
@@ -840,16 +936,18 @@
     if (!confirm('Delete this link?')) return;
 
     try {
-      const response = await fetch(`/api/admin/links/${id}`, {
+      const response = await authFetch(`/api/admin/links/${id}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to delete');
-      
+
       await loadConfig();
       renderLinks();
       showToast('Link deleted');
     } catch (err) {
-      showToast('Failed to delete link', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to delete link', true);
+      }
     }
   };
 
@@ -867,7 +965,7 @@
     };
 
     try {
-      const response = await fetch('/api/admin/settings', {
+      const response = await authFetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
@@ -880,22 +978,17 @@
       showToast('Authentication settings saved');
     } catch (err) {
       console.error('Save auth settings error:', err);
-      showToast(err.message || 'Failed to save settings', true);
+      if (err.message !== 'Authentication required') {
+        showToast(err.message || 'Failed to save settings', true);
+      }
     }
   }
 
   // Export config
   async function exportConfig() {
     try {
-      const response = await fetch('/api/admin/export');
-      if (!response.ok) {
-        if (response.status === 401) {
-          showToast('Session expired. Please log in again.', true);
-          window.location.href = '/admin/login';
-          return;
-        }
-        throw new Error('Export failed');
-      }
+      const response = await authFetch('/api/admin/export');
+      if (!response.ok) throw new Error('Export failed');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -905,7 +998,9 @@
       window.URL.revokeObjectURL(url);
       showToast('Config exported');
     } catch (err) {
-      showToast('Failed to export config', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to export config', true);
+      }
     }
   }
 
@@ -915,21 +1010,23 @@
       const text = await file.text();
       const config = JSON.parse(text);
 
-      const response = await fetch('/api/admin/import', {
+      const response = await authFetch('/api/admin/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
       });
 
       if (!response.ok) throw new Error('Import failed');
-      
+
       await loadConfig();
       populateForm();
       renderCategories();
       renderLinks();
       showToast('Config imported successfully');
     } catch (err) {
-      showToast('Failed to import config', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to import config', true);
+      }
     }
   }
 
@@ -950,7 +1047,7 @@
     }
 
     try {
-      const response = await fetch('/api/admin/credentials', {
+      const response = await authFetch('/api/admin/credentials', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -976,7 +1073,9 @@
         showToast('Credentials updated');
       }
     } catch (err) {
-      showToast('Failed to update credentials', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to update credentials', true);
+      }
     }
   }
 
@@ -1075,13 +1174,13 @@
     try {
       let response;
       if (id) {
-        response = await fetch(`/api/admin/users/${id}`, {
+        response = await authFetch(`/api/admin/users/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(userData)
         });
       } else {
-        response = await fetch('/api/admin/users', {
+        response = await authFetch('/api/admin/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(userData)
@@ -1098,7 +1197,9 @@
       closeModal('userModal');
       showToast(id ? 'User updated' : 'User created');
     } catch (err) {
-      showToast(err.message || 'Failed to save user', true);
+      if (err.message !== 'Authentication required') {
+        showToast(err.message || 'Failed to save user', true);
+      }
     }
   }
 
@@ -1107,7 +1208,7 @@
     if (!confirm('Delete this user?')) return;
 
     try {
-      const response = await fetch(`/api/admin/users/${id}`, {
+      const response = await authFetch(`/api/admin/users/${id}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to delete');
@@ -1116,7 +1217,9 @@
       renderUsers();
       showToast('User deleted');
     } catch (err) {
-      showToast('Failed to delete user', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to delete user', true);
+      }
     }
   };
 
@@ -1296,7 +1399,7 @@
   // Approve category request
   window.approveCategoryRequest = async function(id) {
     try {
-      const response = await fetch(`/api/admin/requests/category/${id}/approve`, {
+      const response = await authFetch(`/api/admin/requests/category/${id}/approve`, {
         method: 'POST'
       });
       if (!response.ok) {
@@ -1312,14 +1415,16 @@
       renderCategories();
       showToast('Category request approved');
     } catch (err) {
-      showToast(err.message || 'Failed to approve request', true);
+      if (err.message !== 'Authentication required') {
+        showToast(err.message || 'Failed to approve request', true);
+      }
     }
   };
 
   // Approve link request
   window.approveLinkRequest = async function(id) {
     try {
-      const response = await fetch(`/api/admin/requests/link/${id}/approve`, {
+      const response = await authFetch(`/api/admin/requests/link/${id}/approve`, {
         method: 'POST'
       });
       if (!response.ok) {
@@ -1334,7 +1439,9 @@
       renderLinks();
       showToast('Link request approved');
     } catch (err) {
-      showToast(err.message || 'Failed to approve request', true);
+      if (err.message !== 'Authentication required') {
+        showToast(err.message || 'Failed to approve request', true);
+      }
     }
   };
 
@@ -1343,7 +1450,7 @@
     if (!confirm('Deny this category request? Any link requests that depend on this category will also be denied.')) return;
 
     try {
-      const response = await fetch(`/api/admin/requests/category/${id}/deny`, {
+      const response = await authFetch(`/api/admin/requests/category/${id}/deny`, {
         method: 'POST'
       });
       if (!response.ok) throw new Error('Failed to deny');
@@ -1353,7 +1460,9 @@
       updateRequestsBadge();
       showToast('Category request denied');
     } catch (err) {
-      showToast('Failed to deny request', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to deny request', true);
+      }
     }
   };
 
@@ -1362,7 +1471,7 @@
     if (!confirm('Deny this link request?')) return;
 
     try {
-      const response = await fetch(`/api/admin/requests/link/${id}/deny`, {
+      const response = await authFetch(`/api/admin/requests/link/${id}/deny`, {
         method: 'POST'
       });
       if (!response.ok) throw new Error('Failed to deny');
@@ -1372,7 +1481,9 @@
       updateRequestsBadge();
       showToast('Link request denied');
     } catch (err) {
-      showToast('Failed to deny request', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to deny request', true);
+      }
     }
   };
 
@@ -1381,7 +1492,7 @@
     if (!confirm('Delete this category request?')) return;
 
     try {
-      const response = await fetch(`/api/admin/requests/category/${id}`, {
+      const response = await authFetch(`/api/admin/requests/category/${id}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to delete');
@@ -1391,7 +1502,9 @@
       updateRequestsBadge();
       showToast('Category request deleted');
     } catch (err) {
-      showToast('Failed to delete request', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to delete request', true);
+      }
     }
   };
 
@@ -1400,7 +1513,7 @@
     if (!confirm('Delete this link request?')) return;
 
     try {
-      const response = await fetch(`/api/admin/requests/link/${id}`, {
+      const response = await authFetch(`/api/admin/requests/link/${id}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to delete');
@@ -1410,7 +1523,9 @@
       updateRequestsBadge();
       showToast('Link request deleted');
     } catch (err) {
-      showToast('Failed to delete request', true);
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to delete request', true);
+      }
     }
   };
 

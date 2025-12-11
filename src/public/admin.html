@@ -102,47 +102,49 @@
               <span>Show Site Logo</span>
             </label>
           </div>
-          <div class="form-group">
-            <label class="form-label">Logo Display</label>
-            <select class="form-select" id="siteLogoMode">
-              <option value="none">No Logo</option>
-              <option value="favicon">Use Site Favicon</option>
-              <option value="custom">Custom Logo</option>
-            </select>
-          </div>
-          <div class="form-row">
+          <div id="logoOptionsContainer">
             <div class="form-group">
-              <label class="form-label">Logo Size</label>
-              <select class="form-select" id="logoSize">
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
+              <label class="form-label">Logo Display</label>
+              <select class="form-select" id="siteLogoMode">
+                <option value="none">No Logo</option>
+                <option value="favicon">Use Site Favicon</option>
+                <option value="custom">Custom Logo</option>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">Logo Position</label>
-              <select class="form-select" id="logoPosition">
-                <option value="above">Above Title</option>
-                <option value="below">Below Title</option>
-                <option value="inline">Inline with Title</option>
-              </select>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Logo Size</label>
+                <select class="form-select" id="logoSize">
+                  <option value="small">Small</option>
+                  <option value="medium">Medium</option>
+                  <option value="large">Large</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Logo Position</label>
+                <select class="form-select" id="logoPosition">
+                  <option value="above">Above Title</option>
+                  <option value="below">Below Title</option>
+                  <option value="inline">Inline with Title</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Logo Alignment</label>
+                <select class="form-select" id="logoAlignment">
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Logo Alignment</label>
-              <select class="form-select" id="logoAlignment">
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
-              </select>
+            <div class="form-group" id="customLogoUpload">
+              <div class="file-upload" id="logoImageUpload">
+                <input type="file" accept="image/*" id="logoImageInput">
+                <p class="file-upload-text">Click or drag to upload logo image</p>
+              </div>
+              <div class="preview-container" id="logoImagePreview"></div>
+              <button class="btn btn-sm btn-danger" id="clearLogoImage">Clear Logo</button>
             </div>
-          </div>
-          <div class="form-group" id="customLogoUpload">
-            <div class="file-upload" id="logoImageUpload">
-              <input type="file" accept="image/*" id="logoImageInput">
-              <p class="file-upload-text">Click or drag to upload logo image</p>
-            </div>
-            <div class="preview-container" id="logoImagePreview"></div>
-            <button class="btn btn-sm btn-danger" id="clearLogoImage">Clear Logo</button>
           </div>
         </div>
 
@@ -749,6 +751,30 @@
       <div class="modal-footer">
         <button class="btn" onclick="closeModal('userModal')">Cancel</button>
         <button class="btn btn-primary" id="saveUserBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Re-authentication Modal -->
+  <div class="modal-overlay" id="reAuthModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Session Expired</h2>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-20">Your session has expired. Please log in again to continue. Your unsaved changes will be preserved.</p>
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-input" id="reAuthUsername" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="reAuthPassword" autocomplete="current-password">
+        </div>
+        <div id="reAuthError" class="message error hidden"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="reAuthBtn">Log In</button>
       </div>
     </div>
   </div>
