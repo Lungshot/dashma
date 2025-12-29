@@ -150,6 +150,16 @@
 
         <div class="card">
           <h3 class="card-title">Colors</h3>
+          <div class="form-group">
+            <label class="form-label">Color Theme</label>
+            <select class="form-select" id="colorTheme">
+              <option value="custom">Custom (Manual Colors)</option>
+              <optgroup label="Dark Themes" id="darkThemesGroup"></optgroup>
+              <optgroup label="Light Themes" id="lightThemesGroup"></optgroup>
+            </select>
+            <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.85rem;">Select a pre-made theme or choose "Custom" to set colors manually.</p>
+          </div>
+          <div id="customColorsContainer">
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Background Color</label>
@@ -204,6 +214,7 @@
                 <input type="text" class="form-input color-value" id="tagBgColor" value="rgba(255,255,255,0.1)">
               </div>
             </div>
+          </div>
           </div>
           <button class="btn btn-sm btn-secondary" id="resetColors">Reset Colors to Default</button>
         </div>
@@ -783,6 +794,7 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
 
+  <script src="/js/themes.js"></script>
   <script src="/js/admin.js"></script>
 </body>
 </html>

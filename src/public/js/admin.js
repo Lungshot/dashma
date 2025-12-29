@@ -81,6 +81,7 @@
     await loadUsers();
     await loadRequests();
     setupNavigation();
+    populateThemeDropdown();
     setupEventListeners();
     populateForm();
     renderCategories();
@@ -88,6 +89,61 @@
     renderUsers();
     renderRequests();
     updateRequestsBadge();
+  }
+
+  // Populate theme dropdown with available themes
+  function populateThemeDropdown() {
+    const darkGroup = document.getElementById('darkThemesGroup');
+    const lightGroup = document.getElementById('lightThemesGroup');
+
+    if (!darkGroup || !lightGroup || typeof DASHMA_THEMES === 'undefined') return;
+
+    const grouped = getThemesGrouped();
+
+    darkGroup.innerHTML = grouped.dark.map(theme =>
+      `<option value="${theme.id}">${theme.name}</option>`
+    ).join('');
+
+    lightGroup.innerHTML = grouped.light.map(theme =>
+      `<option value="${theme.id}">${theme.name}</option>`
+    ).join('');
+  }
+
+  // Handle theme selection change
+  function handleThemeChange() {
+    const themeId = document.getElementById('colorTheme').value;
+    const customColorsContainer = document.getElementById('customColorsContainer');
+
+    if (themeId === 'custom') {
+      // Show custom color controls
+      customColorsContainer.style.display = 'block';
+    } else {
+      // Hide custom color controls and apply theme colors
+      customColorsContainer.style.display = 'none';
+
+      const theme = getTheme(themeId);
+      if (theme) {
+        applyThemeToForm(theme.colors);
+      }
+    }
+  }
+
+  // Apply theme colors to the form inputs
+  function applyThemeToForm(colors) {
+    document.getElementById('backgroundColor').value = colors.backgroundColor;
+    document.getElementById('bgColorPicker').value = colors.backgroundColor;
+    document.getElementById('textColor').value = colors.textColor;
+    document.getElementById('textColorPicker').value = colors.textColor;
+    document.getElementById('accentColor').value = colors.accentColor;
+    document.getElementById('accentColorPicker').value = colors.accentColor;
+    document.getElementById('categoryBgColor').value = colors.categoryBgColor;
+    document.getElementById('categoryBgColorPicker').value = rgbaToHex(colors.categoryBgColor);
+    document.getElementById('categoryTitleColor').value = colors.categoryTitleColor;
+    document.getElementById('categoryTitleColorPicker').value = colors.categoryTitleColor;
+    document.getElementById('linkCardBgColor').value = colors.linkCardBgColor;
+    document.getElementById('linkCardBgColorPicker').value = rgbaToHex(colors.linkCardBgColor);
+    document.getElementById('tagBgColor').value = colors.tagBgColor;
+    document.getElementById('tagBgColorPicker').value = rgbaToHex(colors.tagBgColor);
   }
 
   // Load configuration from API
@@ -156,6 +212,9 @@
 
   // Setup event listeners
   function setupEventListeners() {
+    // Theme selection
+    document.getElementById('colorTheme').addEventListener('change', handleThemeChange);
+
     // Color pickers sync
     setupColorPicker('bgColorPicker', 'backgroundColor');
     setupColorPicker('textColorPicker', 'textColor');
@@ -331,6 +390,18 @@
         `<img src="${s.siteLogo}" class="preview-image" alt="Logo" style="max-height: 60px;">`;
     }
 
+    // Color Theme
+    const colorTheme = s.colorTheme || 'custom';
+    setSelectValue('colorTheme', colorTheme);
+
+    // Show/hide custom colors container based on theme
+    const customColorsContainer = document.getElementById('customColorsContainer');
+    if (colorTheme === 'custom') {
+      customColorsContainer.style.display = 'block';
+    } else {
+      customColorsContainer.style.display = 'none';
+    }
+
     // Colors
     document.getElementById('backgroundColor').value = s.backgroundColor || '#212121';
     document.getElementById('bgColorPicker').value = s.backgroundColor || '#212121';
@@ -458,6 +529,7 @@
       logoSize: document.getElementById('logoSize').value,
       logoPosition: document.getElementById('logoPosition').value,
       logoAlignment: document.getElementById('logoAlignment').value,
+      colorTheme: document.getElementById('colorTheme').value,
       backgroundColor: document.getElementById('backgroundColor').value,
       textColor: document.getElementById('textColor').value,
       accentColor: document.getElementById('accentColor').value,
@@ -557,6 +629,10 @@
       linkCardBgColor: 'rgba(255,255,255,0.05)',
       tagBgColor: 'rgba(255,255,255,0.1)'
     };
+
+    // Reset theme to custom and show custom colors container
+    document.getElementById('colorTheme').value = 'custom';
+    document.getElementById('customColorsContainer').style.display = 'block';
 
     // Update form fields
     document.getElementById('backgroundColor').value = defaults.backgroundColor;

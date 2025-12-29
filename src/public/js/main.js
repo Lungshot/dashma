@@ -26,16 +26,34 @@
     const s = appData.settings;
     const root = document.documentElement;
 
-    root.style.setProperty('--bg-color', s.backgroundColor);
+    // Check if a theme is selected (not 'custom')
+    let colors = {
+      backgroundColor: s.backgroundColor,
+      textColor: s.textColor,
+      accentColor: s.accentColor,
+      categoryBgColor: s.categoryBgColor,
+      categoryTitleColor: s.categoryTitleColor,
+      linkCardBgColor: s.linkCardBgColor,
+      tagBgColor: s.tagBgColor
+    };
+
+    if (s.colorTheme && s.colorTheme !== 'custom' && typeof getTheme === 'function') {
+      const theme = getTheme(s.colorTheme);
+      if (theme && theme.colors) {
+        colors = { ...colors, ...theme.colors };
+      }
+    }
+
+    root.style.setProperty('--bg-color', colors.backgroundColor);
     root.style.setProperty('--bg-image', s.backgroundImage ? `url(${s.backgroundImage})` : 'none');
     root.style.setProperty('--font-family', s.fontFamily);
     root.style.setProperty('--title-font', s.titleFontFamily);
-    root.style.setProperty('--text-color', s.textColor);
-    root.style.setProperty('--accent-color', s.accentColor);
-    if (s.categoryBgColor) root.style.setProperty('--category-bg-color', s.categoryBgColor);
-    if (s.categoryTitleColor) root.style.setProperty('--category-title-color', s.categoryTitleColor);
-    if (s.linkCardBgColor) root.style.setProperty('--link-card-bg-color', s.linkCardBgColor);
-    if (s.tagBgColor) root.style.setProperty('--tag-bg-color', s.tagBgColor);
+    root.style.setProperty('--text-color', colors.textColor);
+    root.style.setProperty('--accent-color', colors.accentColor);
+    if (colors.categoryBgColor) root.style.setProperty('--category-bg-color', colors.categoryBgColor);
+    if (colors.categoryTitleColor) root.style.setProperty('--category-title-color', colors.categoryTitleColor);
+    if (colors.linkCardBgColor) root.style.setProperty('--link-card-bg-color', colors.linkCardBgColor);
+    if (colors.tagBgColor) root.style.setProperty('--tag-bg-color', colors.tagBgColor);
 
     // Apply title settings
     const header = document.querySelector('.header');

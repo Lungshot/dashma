@@ -8,6 +8,7 @@ const CONFIG_PATH = path.join(__dirname, '..', 'data', 'config.json');
 const defaultConfig = {
   settings: {
     siteName: 'Dashma',
+    colorTheme: 'custom', // 'custom' means use individual color settings, otherwise theme ID
     backgroundColor: '#212121',
     backgroundImage: null,
     fontFamily: "'Courier New', Courier, monospace",
@@ -97,6 +98,7 @@ function getPublicSettings() {
   const config = getConfig();
   return {
     siteName: config.settings.siteName,
+    colorTheme: config.settings.colorTheme,
     titleSize: config.settings.titleSize,
     titleAlignment: config.settings.titleAlignment,
     titleHoverEffect: config.settings.titleHoverEffect,
