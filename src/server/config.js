@@ -33,7 +33,10 @@ const defaultConfig = {
       tenantId: '',
       clientSecret: '',
       redirectUri: ''
-    }
+    },
+    showRequestLink: false,
+    requestLinkText: 'Request Link Addition',
+    requestLinkUrl: '/requests'
   },
   admin: {
     username: 'admin',
@@ -136,7 +139,10 @@ function getPublicSettings() {
     footerAlignment: config.settings.footerAlignment,
     footerHoverEffect: config.settings.footerHoverEffect,
     authMode: config.settings.authMode,
-    mainAuthMode: config.settings.mainAuthMode
+    mainAuthMode: config.settings.mainAuthMode,
+    showRequestLink: config.settings.showRequestLink,
+    requestLinkText: config.settings.requestLinkText,
+    requestLinkUrl: config.settings.requestLinkUrl
   };
 }
 

@@ -449,6 +449,11 @@
     setSelectValue('footerAlignment', s.footerAlignment || 'center');
     setSelectValue('footerHoverEffect', s.footerHoverEffect || 'none');
 
+    // Request Link
+    document.getElementById('showRequestLink').checked = s.showRequestLink === true;
+    document.getElementById('requestLinkText').value = s.requestLinkText || 'Request Link Addition';
+    document.getElementById('requestLinkUrl').value = s.requestLinkUrl || '/requests';
+
     // Auth
     setSelectValue('authMode', s.authMode || 'basic');
     setSelectValue('mainAuthMode', s.mainAuthMode || 'none');
@@ -553,7 +558,10 @@
       footerText: document.getElementById('footerText').value.trim(),
       footerSize: document.getElementById('footerSize').value,
       footerAlignment: document.getElementById('footerAlignment').value,
-      footerHoverEffect: document.getElementById('footerHoverEffect').value
+      footerHoverEffect: document.getElementById('footerHoverEffect').value,
+      showRequestLink: document.getElementById('showRequestLink').checked,
+      requestLinkText: document.getElementById('requestLinkText').value.trim() || 'Request Link Addition',
+      requestLinkUrl: document.getElementById('requestLinkUrl').value.trim() || '/requests'
     };
 
     try {

@@ -155,6 +155,17 @@
       footer.style.display = 'none';
     }
 
+    // Apply request link settings
+    const requestLinkContainer = document.querySelector('.request-link-container');
+    const requestLink = document.querySelector('.request-link');
+    if (s.showRequestLink) {
+      requestLink.textContent = s.requestLinkText || 'Request Link Addition';
+      requestLink.href = s.requestLinkUrl || '/requests';
+      requestLinkContainer.style.display = 'block';
+    } else {
+      requestLinkContainer.style.display = 'none';
+    }
+
     // Setup hacked text effect for title if enabled
     if (s.titleHoverEffect === 'hacked') {
       const titleEl = document.querySelector('.site-title');

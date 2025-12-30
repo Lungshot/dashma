@@ -863,3 +863,24 @@ body {
 .footer-hover-blur:hover {
   animation: blur-in 0.3s ease forwards;
 }
+
+/* Request Link */
+.request-link-container {
+  text-align: center;
+  padding: 15px 20px;
+  margin-top: 10px;
+}
+
+.request-link {
+  color: var(--accent-color, #888888);
+  text-decoration: none;
+  font-size: 0.85rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.request-link:hover {
+  opacity: 1;
+  color: var(--text-color, #ffffff);
+  text-decoration: underline;
+}
