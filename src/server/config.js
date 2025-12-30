@@ -36,7 +36,7 @@ const defaultConfig = {
     },
     showRequestLink: false,
     requestLinkText: 'Request Link Addition',
-    requestLinkUrl: '/requests'
+    requestLinkUrl: '/request'
   },
   admin: {
     username: 'admin',

@@ -160,7 +160,7 @@
     const requestLink = document.querySelector('.request-link');
     if (s.showRequestLink) {
       requestLink.textContent = s.requestLinkText || 'Request Link Addition';
-      requestLink.href = s.requestLinkUrl || '/requests';
+      requestLink.href = s.requestLinkUrl || '/request';
       requestLinkContainer.style.display = 'block';
     } else {
       requestLinkContainer.style.display = 'none';

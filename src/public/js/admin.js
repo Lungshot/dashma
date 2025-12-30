@@ -452,7 +452,7 @@
     // Request Link
     document.getElementById('showRequestLink').checked = s.showRequestLink === true;
     document.getElementById('requestLinkText').value = s.requestLinkText || 'Request Link Addition';
-    document.getElementById('requestLinkUrl').value = s.requestLinkUrl || '/requests';
+    document.getElementById('requestLinkUrl').value = s.requestLinkUrl || '/request';
 
     // Auth
     setSelectValue('authMode', s.authMode || 'basic');
