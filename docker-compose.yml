@@ -16,5 +16,9 @@ services:
       # SESSION_SECRET=your-secure-random-string-minimum-32-characters
       # - SESSION_SECRET=${SESSION_SECRET}
     volumes:
-      - ./src/data:/app/src/data
-      - ./src/public/uploads:/app/src/public/uploads
+      - dashma_data:/app/src/data
+      - dashma_uploads:/app/src/public/uploads
+
+volumes:
+  dashma_data:
+  dashma_uploads:
