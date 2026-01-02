@@ -640,7 +640,15 @@
           </div>
           <div class="form-group">
             <label class="form-label">Redirect URI</label>
-            <input type="text" class="form-input" id="entraRedirectUri" placeholder="https://yourdomain.com/admin/callback">
+            <input type="text" class="form-input" id="entraRedirectUri" placeholder="https://yourdomain.com/auth/callback">
+          </div>
+          <div class="form-group" id="adminAllowlistSection">
+            <label class="form-label">Admin Allowlist</label>
+            <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 0.5rem;">Only these email addresses can access the admin panel via SSO. Leave empty to disable SSO admin access.</p>
+            <div class="tags-input-wrapper" id="adminAllowlistWrapper">
+              <input type="text" class="tags-input" id="adminAllowlistInput" placeholder="Add email and press Enter">
+            </div>
+            <input type="hidden" id="adminAllowlistHidden">
           </div>
         </div>
 

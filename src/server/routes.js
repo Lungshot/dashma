@@ -266,15 +266,23 @@ async function registerRoutes(fastify) {
       const isAdminLogin = request.session.adminLoginAttempt;
       delete request.session.adminLoginAttempt;
 
+      const userEmail = result.account.username; // In Entra ID, username is typically the email/UPN
+
       if (isAdminLogin) {
+        // Check if user is in the admin allowlist
+        if (!config.isEmailAllowedAdmin(userEmail)) {
+          // User authenticated but not allowed admin access
+          return reply.redirect('/admin/login?error=not_authorized');
+        }
+
         request.session.authenticated = true;
-        request.session.username = result.account.username;
+        request.session.username = userEmail;
         request.session.entraUser = true;
         return reply.redirect('/admin');
       } else {
-        // Main site login
+        // Main site login - no allowlist check needed
         request.session.userAuthenticated = true;
-        request.session.username = result.account.username;
+        request.session.username = userEmail;
         request.session.entraUser = true;
         const redirect = request.session.loginRedirect || '/';
         delete request.session.loginRedirect;

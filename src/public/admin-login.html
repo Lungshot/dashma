@@ -131,8 +131,11 @@
     if (urlParams.has('error')) {
       const errorEl = document.getElementById('error-message');
       errorEl.classList.remove('hidden');
-      if (urlParams.get('error') === 'entra') {
+      const errorType = urlParams.get('error');
+      if (errorType === 'entra') {
         errorEl.textContent = 'Microsoft sign-in failed. Please try again.';
+      } else if (errorType === 'not_authorized') {
+        errorEl.textContent = 'Access denied. Your account is not authorized for admin access.';
       } else {
         errorEl.textContent = 'Invalid username or password.';
       }

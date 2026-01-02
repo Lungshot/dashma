@@ -500,6 +500,8 @@
       document.getElementById('entraTenantId').value = s.entraId.tenantId || '';
       document.getElementById('entraClientSecret').value = s.entraId.clientSecret || '';
       document.getElementById('entraRedirectUri').value = s.entraId.redirectUri || '';
+      // Load admin allowlist
+      loadAdminAllowlist(s.entraId.adminAllowlist || []);
     }
     toggleEntraSettings();
     toggleUserManagement();
@@ -1576,6 +1578,94 @@
 
   // ==================== END WIDGET MANAGEMENT ====================
 
+  // ==================== ADMIN ALLOWLIST MANAGEMENT ====================
+
+  let adminAllowlistEmails = [];
+
+  function loadAdminAllowlist(emails) {
+    adminAllowlistEmails = emails || [];
+    renderAdminAllowlist();
+  }
+
+  function getAdminAllowlist() {
+    return adminAllowlistEmails;
+  }
+
+  function renderAdminAllowlist() {
+    const wrapper = document.getElementById('adminAllowlistWrapper');
+    const input = document.getElementById('adminAllowlistInput');
+    if (!wrapper || !input) return;
+
+    // Remove existing tags
+    wrapper.querySelectorAll('.tag').forEach(tag => tag.remove());
+
+    // Add tags for each email
+    adminAllowlistEmails.forEach(email => {
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.innerHTML = `${escapeHtml(email)} <span class="tag-remove" data-email="${escapeHtml(email)}">&times;</span>`;
+      wrapper.insertBefore(tag, input);
+    });
+  }
+
+  function addEmailToAllowlist(email) {
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!normalizedEmail) return;
+
+    // Basic email validation
+    if (!normalizedEmail.includes('@')) {
+      showToast('Please enter a valid email address', true);
+      return;
+    }
+
+    // Check for duplicates
+    if (adminAllowlistEmails.some(e => e.toLowerCase() === normalizedEmail)) {
+      showToast('Email already in allowlist', true);
+      return;
+    }
+
+    adminAllowlistEmails.push(normalizedEmail);
+    renderAdminAllowlist();
+  }
+
+  function removeEmailFromAllowlist(email) {
+    adminAllowlistEmails = adminAllowlistEmails.filter(e => e.toLowerCase() !== email.toLowerCase());
+    renderAdminAllowlist();
+  }
+
+  function setupAdminAllowlistListeners() {
+    const input = document.getElementById('adminAllowlistInput');
+    const wrapper = document.getElementById('adminAllowlistWrapper');
+
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addEmailToAllowlist(input.value);
+          input.value = '';
+        }
+      });
+
+      input.addEventListener('blur', () => {
+        if (input.value.trim()) {
+          addEmailToAllowlist(input.value);
+          input.value = '';
+        }
+      });
+    }
+
+    if (wrapper) {
+      wrapper.addEventListener('click', (e) => {
+        if (e.target.classList.contains('tag-remove')) {
+          const email = e.target.dataset.email;
+          removeEmailFromAllowlist(email);
+        }
+      });
+    }
+  }
+
+  // ==================== END ADMIN ALLOWLIST MANAGEMENT ====================
+
   // Save auth settings
   async function saveAuth() {
     const settings = {
@@ -1585,7 +1675,8 @@
         clientId: document.getElementById('entraClientId').value,
         tenantId: document.getElementById('entraTenantId').value,
         clientSecret: document.getElementById('entraClientSecret').value,
-        redirectUri: document.getElementById('entraRedirectUri').value
+        redirectUri: document.getElementById('entraRedirectUri').value,
+        adminAllowlist: getAdminAllowlist()
       }
     };
 
@@ -2440,5 +2531,6 @@
   document.addEventListener('DOMContentLoaded', () => {
     init();
     setupWizardListeners();
+    setupAdminAllowlistListeners();
   });
 })();

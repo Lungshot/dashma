@@ -32,7 +32,8 @@ const defaultConfig = {
       clientId: '',
       tenantId: '',
       clientSecret: '',
-      redirectUri: ''
+      redirectUri: '',
+      adminAllowlist: [] // List of email addresses allowed admin access via SSO
     },
     showRequestLink: false,
     requestLinkText: 'Request Link Addition',
@@ -367,6 +368,21 @@ function getAdminUsername() {
   return getConfig().admin.username;
 }
 
+// Check if an email is allowed admin access via SSO
+function isEmailAllowedAdmin(email) {
+  const config = getConfig();
+  const allowlist = config.settings.entraId?.adminAllowlist || [];
+
+  // If allowlist is empty, no SSO users are allowed admin access
+  if (allowlist.length === 0) {
+    return false;
+  }
+
+  // Case-insensitive email comparison
+  const normalizedEmail = email.toLowerCase().trim();
+  return allowlist.some(allowed => allowed.toLowerCase().trim() === normalizedEmail);
+}
+
 // User management functions
 function getUsers() {
   const config = getConfig();
@@ -647,6 +663,7 @@ module.exports = {
   updateAdminCredentials,
   mustChangePassword,
   getAdminUsername,
+  isEmailAllowedAdmin,
   getUsers,
   addUser,
   updateUser,
