@@ -29,8 +29,8 @@ const defaultSettings = {
 async function icmpPing(host, timeout) {
   try {
     const result = await ping.promise.probe(host, {
-      timeout: Math.ceil(timeout / 1000),
-      extra: ['-n', '1'] // Windows: -n for count
+      timeout: Math.ceil(timeout / 1000)
+      // Let the ping package handle platform-specific flags automatically
     });
     return {
       alive: result.alive,
