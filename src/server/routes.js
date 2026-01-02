@@ -666,6 +666,20 @@ async function registerRoutes(fastify) {
       return status;
     });
 
+    // Test an arbitrary host/port (for admin testing in widget config)
+    fastify.post('/api/admin/monitoring/test', async (request, reply) => {
+      const { host, port } = request.body;
+      if (!host) {
+        return reply.code(400).send({ error: 'Host is required' });
+      }
+      try {
+        const result = await pingService.testHost(host, port || null);
+        return result;
+      } catch (err) {
+        return reply.code(500).send({ error: err.message });
+      }
+    });
+
     fastify.get('/api/admin/monitoring/settings', async () => {
       return config.getMonitoringSettings();
     });

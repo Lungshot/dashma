@@ -339,6 +339,34 @@ function isServiceRunning() {
   return isRunning;
 }
 
+/**
+ * Test a host directly (for admin testing)
+ * @param {string} host - Host/IP to test
+ * @param {number|null} port - Port for TCP check, null for ICMP
+ * @returns {Promise<object>} - Test result
+ */
+async function testHost(host, port = null) {
+  const timeout = defaultSettings.timeout;
+  const startTime = Date.now();
+
+  let result;
+  if (port) {
+    result = await tcpCheck(host, port, timeout);
+  } else {
+    result = await icmpPing(host, timeout);
+  }
+
+  return {
+    host,
+    port,
+    status: result.alive ? 'online' : 'offline',
+    latency: result.latency,
+    error: result.error || null,
+    checkedAt: new Date().toISOString(),
+    method: port ? 'TCP' : 'ICMP'
+  };
+}
+
 module.exports = {
   startService,
   stopService,
@@ -348,5 +376,6 @@ module.exports = {
   addHost,
   removeHost,
   refreshHosts,
-  isServiceRunning
+  isServiceRunning,
+  testHost
 };

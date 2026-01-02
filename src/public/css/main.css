@@ -885,29 +885,40 @@ body {
   text-decoration: underline;
 }
 
-/* Status Bubble - Monitoring indicator */
+/* Status Indicator - Monitoring icon */
 .status-bubble {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
   margin-right: 6px;
   vertical-align: middle;
   flex-shrink: 0;
+  font-size: 12px;
+  font-weight: bold;
 }
 
-.status-bubble.online {
-  background-color: #4ade80;
-  box-shadow: 0 0 6px #4ade80;
+.status-bubble::before {
+  content: '?';
+  color: #a1a1aa;
 }
 
-.status-bubble.offline {
-  background-color: #f87171;
-  box-shadow: 0 0 6px #f87171;
+.status-bubble.online::before {
+  content: '✓';
+  color: #4ade80;
+  text-shadow: 0 0 6px #4ade80;
 }
 
-.status-bubble.unknown {
-  background-color: #a1a1aa;
+.status-bubble.offline::before {
+  content: '✗';
+  color: #f87171;
+  text-shadow: 0 0 6px #f87171;
+}
+
+.status-bubble.unknown::before {
+  content: '?';
+  color: #a1a1aa;
 }
 
 /* Widget Containers */

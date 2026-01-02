@@ -1234,13 +1234,15 @@
     const row = document.createElement('div');
     row.className = 'server-row';
     row.id = rowId;
-    row.style.cssText = 'display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center;';
+    row.style.cssText = 'display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; flex-wrap: wrap;';
 
     row.innerHTML = `
-      <input type="text" class="form-input server-name" placeholder="Name" value="${serverData?.name || ''}" style="flex: 1;">
-      <input type="text" class="form-input server-host" placeholder="Host/IP" value="${serverData?.host || ''}" style="flex: 1;">
+      <input type="text" class="form-input server-name" placeholder="Name" value="${serverData?.name || ''}" style="flex: 1; min-width: 100px;">
+      <input type="text" class="form-input server-host" placeholder="Host/IP" value="${serverData?.host || ''}" style="flex: 1; min-width: 120px;">
       <input type="number" class="form-input server-port" placeholder="Port" value="${serverData?.port || ''}" style="width: 80px;">
+      <button type="button" class="btn btn-sm" onclick="testServerRow('${rowId}')" style="padding: 0.3rem 0.5rem;">Test</button>
       <button type="button" class="btn btn-sm btn-danger" onclick="removeServerRow('${rowId}')" style="padding: 0.3rem 0.5rem;">×</button>
+      <span class="server-test-result" style="width: 100%; font-size: 0.8rem; margin-top: 0.25rem; display: none;"></span>
     `;
 
     list.appendChild(row);
@@ -1248,6 +1250,52 @@
 
   window.removeServerRow = function(rowId) {
     document.getElementById(rowId)?.remove();
+  };
+
+  // Test a server from the widget config
+  window.testServerRow = async function(rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+
+    const host = row.querySelector('.server-host').value.trim();
+    const port = row.querySelector('.server-port').value;
+    const resultEl = row.querySelector('.server-test-result');
+
+    if (!host) {
+      resultEl.textContent = '⚠️ Enter a host/IP first';
+      resultEl.style.display = 'block';
+      resultEl.style.color = '#fbbf24';
+      return;
+    }
+
+    resultEl.textContent = '⏳ Testing...';
+    resultEl.style.display = 'block';
+    resultEl.style.color = '#a1a1aa';
+
+    try {
+      const response = await authFetch('/api/admin/monitoring/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ host, port: port ? parseInt(port) : null })
+      });
+
+      if (!response.ok) {
+        throw new Error('Test failed');
+      }
+
+      const result = await response.json();
+
+      if (result.status === 'online') {
+        resultEl.innerHTML = `✅ Online (${result.method}) - ${result.latency}ms`;
+        resultEl.style.color = '#4ade80';
+      } else {
+        resultEl.innerHTML = `❌ Offline (${result.method})${result.error ? ' - ' + result.error : ''}`;
+        resultEl.style.color = '#f87171';
+      }
+    } catch (err) {
+      resultEl.textContent = '❌ Test failed: ' + err.message;
+      resultEl.style.color = '#f87171';
+    }
   };
 
   // Get servers from modal
