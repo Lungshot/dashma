@@ -2154,6 +2154,291 @@
     }
   };
 
+  // ==================== ENTRA ID SETUP WIZARD ====================
+
+  let wizardCurrentStep = 1;
+  const wizardTotalSteps = 6;
+
+  // Open the Entra ID setup wizard
+  function openEntraWizard() {
+    wizardCurrentStep = 1;
+
+    // Reset all fields
+    document.getElementById('wizardClientId').value = '';
+    document.getElementById('wizardTenantId').value = '';
+    document.getElementById('wizardClientSecret').value = '';
+
+    // Auto-detect redirect URI based on current location
+    const baseUrl = window.location.origin;
+    const redirectUri = baseUrl + '/auth/callback';
+    document.getElementById('wizardRedirectUri').value = redirectUri;
+    document.getElementById('wizardRedirectUriDisplay').value = redirectUri;
+
+    // Reset validation result
+    document.getElementById('wizardValidationResult').style.display = 'none';
+    document.getElementById('wizardError').style.display = 'none';
+
+    // Show first step
+    updateWizardStep();
+
+    // Show modal
+    document.getElementById('entraWizardModal').classList.add('active');
+  }
+
+  // Update wizard step visibility and buttons
+  function updateWizardStep() {
+    // Hide all steps
+    for (let i = 1; i <= wizardTotalSteps; i++) {
+      const step = document.getElementById(`wizardStep${i}`);
+      if (step) step.style.display = 'none';
+    }
+
+    // Show current step
+    const currentStepEl = document.getElementById(`wizardStep${wizardCurrentStep}`);
+    if (currentStepEl) currentStepEl.style.display = 'block';
+
+    // Update progress indicators
+    document.querySelectorAll('.wizard-step-indicator').forEach(indicator => {
+      const stepNum = parseInt(indicator.dataset.step);
+      indicator.classList.remove('active', 'completed');
+      if (stepNum === wizardCurrentStep) {
+        indicator.classList.add('active');
+      } else if (stepNum < wizardCurrentStep) {
+        indicator.classList.add('completed');
+      }
+    });
+
+    // Update buttons
+    const prevBtn = document.getElementById('wizardPrevBtn');
+    const nextBtn = document.getElementById('wizardNextBtn');
+
+    prevBtn.style.display = wizardCurrentStep > 1 ? 'inline-block' : 'none';
+
+    if (wizardCurrentStep === wizardTotalSteps) {
+      nextBtn.textContent = 'Apply Configuration';
+    } else {
+      nextBtn.textContent = 'Next';
+    }
+
+    // If on redirect step, update the display field
+    if (wizardCurrentStep === 5) {
+      const redirectUri = document.getElementById('wizardRedirectUri').value;
+      document.getElementById('wizardRedirectUriDisplay').value = redirectUri;
+    }
+
+    // If on review step, populate review fields
+    if (wizardCurrentStep === 6) {
+      document.getElementById('reviewClientId').textContent = document.getElementById('wizardClientId').value || '(not set)';
+      document.getElementById('reviewTenantId').textContent = document.getElementById('wizardTenantId').value || '(not set)';
+      const secret = document.getElementById('wizardClientSecret').value;
+      document.getElementById('reviewClientSecret').textContent = secret ? '••••••••' + secret.slice(-4) : '(not set)';
+      document.getElementById('reviewRedirectUri').textContent = document.getElementById('wizardRedirectUri').value || '(not set)';
+    }
+
+    // Hide error
+    document.getElementById('wizardError').style.display = 'none';
+  }
+
+  // Validate current wizard step
+  function validateWizardStep() {
+    const errorEl = document.getElementById('wizardError');
+    errorEl.style.display = 'none';
+
+    switch (wizardCurrentStep) {
+      case 2: // Client ID
+        const clientId = document.getElementById('wizardClientId').value.trim();
+        if (!clientId) {
+          errorEl.textContent = 'Please enter the Application (Client) ID';
+          errorEl.style.display = 'block';
+          return false;
+        }
+        // Basic GUID validation
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)) {
+          errorEl.textContent = 'Client ID should be a GUID (e.g., xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)';
+          errorEl.style.display = 'block';
+          return false;
+        }
+        break;
+
+      case 3: // Tenant ID
+        const tenantId = document.getElementById('wizardTenantId').value.trim();
+        if (!tenantId) {
+          errorEl.textContent = 'Please enter the Directory (Tenant) ID';
+          errorEl.style.display = 'block';
+          return false;
+        }
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+          errorEl.textContent = 'Tenant ID should be a GUID (e.g., xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)';
+          errorEl.style.display = 'block';
+          return false;
+        }
+        break;
+
+      case 4: // Client Secret
+        const clientSecret = document.getElementById('wizardClientSecret').value.trim();
+        if (!clientSecret) {
+          errorEl.textContent = 'Please enter the Client Secret value';
+          errorEl.style.display = 'block';
+          return false;
+        }
+        if (clientSecret.length < 10) {
+          errorEl.textContent = 'Client Secret seems too short. Make sure you copied the entire value.';
+          errorEl.style.display = 'block';
+          return false;
+        }
+        break;
+
+      case 5: // Redirect URI
+        const redirectUri = document.getElementById('wizardRedirectUri').value.trim();
+        if (!redirectUri) {
+          errorEl.textContent = 'Redirect URI is required';
+          errorEl.style.display = 'block';
+          return false;
+        }
+        if (!redirectUri.startsWith('http://') && !redirectUri.startsWith('https://')) {
+          errorEl.textContent = 'Redirect URI must start with http:// or https://';
+          errorEl.style.display = 'block';
+          return false;
+        }
+        break;
+    }
+
+    return true;
+  }
+
+  // Go to next wizard step
+  function wizardNext() {
+    if (!validateWizardStep()) return;
+
+    if (wizardCurrentStep === wizardTotalSteps) {
+      // Apply configuration
+      applyWizardConfig();
+    } else {
+      wizardCurrentStep++;
+      updateWizardStep();
+    }
+  }
+
+  // Go to previous wizard step
+  function wizardPrev() {
+    if (wizardCurrentStep > 1) {
+      wizardCurrentStep--;
+      updateWizardStep();
+    }
+  }
+
+  // Apply wizard configuration
+  async function applyWizardConfig() {
+    const clientId = document.getElementById('wizardClientId').value.trim();
+    const tenantId = document.getElementById('wizardTenantId').value.trim();
+    const clientSecret = document.getElementById('wizardClientSecret').value.trim();
+    const redirectUri = document.getElementById('wizardRedirectUri').value.trim();
+
+    try {
+      const response = await authFetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entraId: {
+            clientId,
+            tenantId,
+            clientSecret,
+            redirectUri
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to save configuration');
+      }
+
+      // Update local config
+      appConfig.settings.entraId = { clientId, tenantId, clientSecret, redirectUri };
+
+      // Update the main form fields
+      document.getElementById('entraClientId').value = clientId;
+      document.getElementById('entraTenantId').value = tenantId;
+      document.getElementById('entraClientSecret').value = clientSecret;
+      document.getElementById('entraRedirectUri').value = redirectUri;
+
+      // Close wizard
+      closeModal('entraWizardModal');
+      showToast('Entra ID configuration saved successfully');
+    } catch (err) {
+      const errorEl = document.getElementById('wizardError');
+      errorEl.textContent = err.message || 'Failed to save configuration';
+      errorEl.style.display = 'block';
+    }
+  }
+
+  // Validate Entra ID configuration
+  async function validateEntraConfig() {
+    const clientId = document.getElementById('wizardClientId').value.trim();
+    const tenantId = document.getElementById('wizardTenantId').value.trim();
+    const clientSecret = document.getElementById('wizardClientSecret').value.trim();
+    const redirectUri = document.getElementById('wizardRedirectUri').value.trim();
+
+    const resultEl = document.getElementById('wizardValidationResult');
+    resultEl.style.display = 'block';
+    resultEl.style.background = 'rgba(255,255,255,0.1)';
+    resultEl.innerHTML = '<span style="color: #a1a1aa;">Validating configuration...</span>';
+
+    try {
+      const response = await authFetch('/api/admin/entra/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, tenantId, clientSecret, redirectUri })
+      });
+
+      const result = await response.json();
+
+      if (result.valid) {
+        resultEl.style.background = 'rgba(74, 222, 128, 0.1)';
+        resultEl.innerHTML = '<span style="color: #4ade80;">✓ Configuration is valid! You can now apply the settings.</span>';
+      } else {
+        resultEl.style.background = 'rgba(248, 113, 113, 0.1)';
+        resultEl.innerHTML = `<span style="color: #f87171;">✗ Validation failed: ${escapeHtml(result.error || 'Unknown error')}</span>`;
+      }
+    } catch (err) {
+      resultEl.style.background = 'rgba(251, 191, 36, 0.1)';
+      resultEl.innerHTML = '<span style="color: #fbbf24;">⚠ Could not validate configuration. You can still apply it and test manually.</span>';
+    }
+  }
+
+  // Copy redirect URI to clipboard
+  window.copyWizardRedirectUri = async function() {
+    const redirectUri = document.getElementById('wizardRedirectUri').value;
+    try {
+      await navigator.clipboard.writeText(redirectUri);
+      showToast('Redirect URI copied to clipboard');
+    } catch (err) {
+      // Fallback for older browsers
+      const input = document.getElementById('wizardRedirectUriDisplay');
+      input.select();
+      document.execCommand('copy');
+      showToast('Redirect URI copied to clipboard');
+    }
+  };
+
+  // Setup wizard event listeners
+  function setupWizardListeners() {
+    document.getElementById('launchEntraWizard')?.addEventListener('click', openEntraWizard);
+    document.getElementById('wizardNextBtn')?.addEventListener('click', wizardNext);
+    document.getElementById('wizardPrevBtn')?.addEventListener('click', wizardPrev);
+    document.getElementById('validateEntraConfig')?.addEventListener('click', validateEntraConfig);
+
+    // Update redirect URI display when editing
+    document.getElementById('wizardRedirectUri')?.addEventListener('input', () => {
+      document.getElementById('wizardRedirectUriDisplay').value = document.getElementById('wizardRedirectUri').value;
+    });
+  }
+
+  // ==================== END ENTRA ID SETUP WIZARD ====================
+
   // Start
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', () => {
+    init();
+    setupWizardListeners();
+  });
 })();

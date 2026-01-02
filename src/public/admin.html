@@ -621,8 +621,11 @@
         </div>
 
         <div class="card" id="entraIdSettings">
-          <h3 class="card-title">Microsoft Entra ID Settings</h3>
-          <p class="text-muted mb-20">Configure SSO for admin and/or main site access.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <h3 class="card-title" style="margin-bottom: 0;">Microsoft Entra ID Settings</h3>
+            <button class="btn btn-sm btn-primary" id="launchEntraWizard">Setup Wizard</button>
+          </div>
+          <p class="text-muted mb-20" style="margin-top: 0.5rem;">Configure SSO for admin and/or main site access. Use the Setup Wizard for guided configuration.</p>
           <div class="form-group">
             <label class="form-label">Client ID</label>
             <input type="text" class="form-input" id="entraClientId" placeholder="Application (client) ID">
@@ -1107,6 +1110,136 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" id="reAuthBtn">Log In</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entra ID Setup Wizard Modal -->
+  <div class="modal-overlay" id="entraWizardModal">
+    <div class="modal" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Microsoft Entra ID Setup Wizard</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Progress indicator -->
+        <div class="wizard-progress" style="display: flex; justify-content: space-between; margin-bottom: 1.5rem; padding: 0 1rem;">
+          <div class="wizard-step-indicator" data-step="1"><span class="step-number">1</span><span class="step-label">Create App</span></div>
+          <div class="wizard-step-indicator" data-step="2"><span class="step-number">2</span><span class="step-label">Client ID</span></div>
+          <div class="wizard-step-indicator" data-step="3"><span class="step-number">3</span><span class="step-label">Tenant ID</span></div>
+          <div class="wizard-step-indicator" data-step="4"><span class="step-number">4</span><span class="step-label">Secret</span></div>
+          <div class="wizard-step-indicator" data-step="5"><span class="step-number">5</span><span class="step-label">Redirect</span></div>
+          <div class="wizard-step-indicator" data-step="6"><span class="step-number">6</span><span class="step-label">Finish</span></div>
+        </div>
+
+        <!-- Step 1: Create App Registration -->
+        <div class="wizard-step" id="wizardStep1">
+          <h4 style="margin-bottom: 1rem;">Step 1: Create App Registration in Azure</h4>
+          <ol class="wizard-instructions">
+            <li>Go to <a href="https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps" target="_blank" rel="noopener">Azure Portal &gt; App Registrations</a></li>
+            <li>Click <strong>"New registration"</strong></li>
+            <li>Enter a name (e.g., "Dashma SSO")</li>
+            <li>Under "Supported account types", select:<br>
+              <em>"Accounts in this organizational directory only"</em></li>
+            <li>Leave Redirect URI blank for now (we'll add it later)</li>
+            <li>Click <strong>"Register"</strong></li>
+          </ol>
+          <p class="text-muted" style="margin-top: 1rem;">After clicking Register, you'll be taken to the app's Overview page. Continue to the next step.</p>
+        </div>
+
+        <!-- Step 2: Get Client ID -->
+        <div class="wizard-step" id="wizardStep2" style="display: none;">
+          <h4 style="margin-bottom: 1rem;">Step 2: Copy Application (Client) ID</h4>
+          <ol class="wizard-instructions">
+            <li>On your app's <strong>Overview</strong> page in Azure</li>
+            <li>Find <strong>"Application (client) ID"</strong></li>
+            <li>Click the copy icon next to it</li>
+            <li>Paste it below:</li>
+          </ol>
+          <div class="form-group" style="margin-top: 1rem;">
+            <label class="form-label">Application (Client) ID</label>
+            <input type="text" class="form-input" id="wizardClientId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+          </div>
+        </div>
+
+        <!-- Step 3: Get Tenant ID -->
+        <div class="wizard-step" id="wizardStep3" style="display: none;">
+          <h4 style="margin-bottom: 1rem;">Step 3: Copy Directory (Tenant) ID</h4>
+          <ol class="wizard-instructions">
+            <li>On the same <strong>Overview</strong> page</li>
+            <li>Find <strong>"Directory (tenant) ID"</strong></li>
+            <li>Click the copy icon next to it</li>
+            <li>Paste it below:</li>
+          </ol>
+          <div class="form-group" style="margin-top: 1rem;">
+            <label class="form-label">Directory (Tenant) ID</label>
+            <input type="text" class="form-input" id="wizardTenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+          </div>
+        </div>
+
+        <!-- Step 4: Create Client Secret -->
+        <div class="wizard-step" id="wizardStep4" style="display: none;">
+          <h4 style="margin-bottom: 1rem;">Step 4: Create Client Secret</h4>
+          <ol class="wizard-instructions">
+            <li>In the left sidebar, click <strong>"Certificates & secrets"</strong></li>
+            <li>Click <strong>"New client secret"</strong></li>
+            <li>Enter a description (e.g., "Dashma")</li>
+            <li>Select an expiration period</li>
+            <li>Click <strong>"Add"</strong></li>
+            <li><strong>Important:</strong> Copy the <strong>"Value"</strong> immediately (it won't be shown again!)</li>
+            <li>Paste it below:</li>
+          </ol>
+          <div class="form-group" style="margin-top: 1rem;">
+            <label class="form-label">Client Secret Value</label>
+            <input type="password" class="form-input" id="wizardClientSecret" placeholder="Your client secret value">
+            <p class="text-muted" style="font-size: 0.8rem; margin-top: 0.25rem;">Copy the "Value" column, not the "Secret ID"</p>
+          </div>
+        </div>
+
+        <!-- Step 5: Configure Redirect URI -->
+        <div class="wizard-step" id="wizardStep5" style="display: none;">
+          <h4 style="margin-bottom: 1rem;">Step 5: Configure Redirect URI</h4>
+          <p style="margin-bottom: 1rem;">Now we need to tell Azure where to send users after they sign in.</p>
+          <ol class="wizard-instructions">
+            <li>In the left sidebar, click <strong>"Authentication"</strong></li>
+            <li>Click <strong>"Add a platform"</strong></li>
+            <li>Select <strong>"Web"</strong></li>
+            <li>Copy and paste this Redirect URI:
+              <div class="copy-field" style="margin: 0.5rem 0;">
+                <input type="text" class="form-input" id="wizardRedirectUriDisplay" readonly style="background: rgba(255,255,255,0.05);">
+                <button type="button" class="btn btn-sm" onclick="copyWizardRedirectUri()" style="margin-left: 0.5rem;">Copy</button>
+              </div>
+            </li>
+            <li>Leave other settings as default</li>
+            <li>Click <strong>"Configure"</strong></li>
+          </ol>
+          <div class="form-group" style="margin-top: 1rem;">
+            <label class="form-label">Redirect URI (auto-detected)</label>
+            <input type="text" class="form-input" id="wizardRedirectUri" placeholder="https://yourdomain.com/auth/callback">
+            <p class="text-muted" style="font-size: 0.8rem; margin-top: 0.25rem;">Edit only if your Dashma is behind a reverse proxy with a different URL</p>
+          </div>
+        </div>
+
+        <!-- Step 6: Validate and Finish -->
+        <div class="wizard-step" id="wizardStep6" style="display: none;">
+          <h4 style="margin-bottom: 1rem;">Step 6: Review and Apply</h4>
+          <p style="margin-bottom: 1rem;">Review your configuration before applying:</p>
+          <div class="wizard-review" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <div class="review-item"><strong>Client ID:</strong> <span id="reviewClientId"></span></div>
+            <div class="review-item"><strong>Tenant ID:</strong> <span id="reviewTenantId"></span></div>
+            <div class="review-item"><strong>Client Secret:</strong> <span id="reviewClientSecret"></span></div>
+            <div class="review-item"><strong>Redirect URI:</strong> <span id="reviewRedirectUri"></span></div>
+          </div>
+          <div id="wizardValidationResult" style="display: none; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem;"></div>
+          <button type="button" class="btn btn-secondary" id="validateEntraConfig" style="margin-bottom: 1rem;">Validate Configuration</button>
+        </div>
+
+        <div id="wizardError" class="message error" style="display: none; margin-top: 1rem;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" id="wizardPrevBtn" style="display: none;">Previous</button>
+        <button class="btn" onclick="closeModal('entraWizardModal')">Cancel</button>
+        <button class="btn btn-primary" id="wizardNextBtn">Next</button>
       </div>
     </div>
   </div>

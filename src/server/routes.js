@@ -719,6 +719,79 @@ async function registerRoutes(fastify) {
         return reply.code(400).send({ error: err.message });
       }
     });
+
+    // Validate Entra ID configuration
+    fastify.post('/api/admin/entra/validate', async (request, reply) => {
+      const { clientId, tenantId, clientSecret, redirectUri } = request.body;
+
+      if (!clientId || !tenantId || !clientSecret) {
+        return { valid: false, error: 'Missing required fields' };
+      }
+
+      try {
+        // Try to get an access token using client credentials flow
+        // This validates that the clientId, tenantId, and clientSecret are correct
+        const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+
+        const params = new URLSearchParams();
+        params.append('client_id', clientId);
+        params.append('client_secret', clientSecret);
+        params.append('scope', 'https://graph.microsoft.com/.default');
+        params.append('grant_type', 'client_credentials');
+
+        const response = await new Promise((resolve, reject) => {
+          const postData = params.toString();
+          const options = {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Content-Length': Buffer.byteLength(postData)
+            },
+            timeout: 10000
+          };
+
+          const req = https.request(tokenUrl, options, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+              try {
+                resolve({ status: res.statusCode, data: JSON.parse(data) });
+              } catch (e) {
+                resolve({ status: res.statusCode, data: null });
+              }
+            });
+          });
+
+          req.on('error', reject);
+          req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Request timeout'));
+          });
+
+          req.write(postData);
+          req.end();
+        });
+
+        if (response.status === 200 && response.data && response.data.access_token) {
+          return { valid: true };
+        } else if (response.data && response.data.error_description) {
+          // Parse the error message for user-friendly feedback
+          let errorMsg = response.data.error_description;
+          if (errorMsg.includes('AADSTS700016')) {
+            errorMsg = 'Application not found. Check your Client ID and Tenant ID.';
+          } else if (errorMsg.includes('AADSTS7000215')) {
+            errorMsg = 'Invalid client secret. Make sure you copied the Value, not the Secret ID.';
+          } else if (errorMsg.includes('AADSTS90002')) {
+            errorMsg = 'Tenant not found. Check your Tenant ID.';
+          }
+          return { valid: false, error: errorMsg };
+        } else {
+          return { valid: false, error: 'Could not validate credentials' };
+        }
+      } catch (err) {
+        return { valid: false, error: err.message || 'Validation request failed' };
+      }
+    });
   });
 
   // Public request submission page
