@@ -13,15 +13,20 @@
 
   // Re-authentication handling
   let pendingRequest = null;
+  let pendingResolve = null;
+  let pendingReject = null;
 
   // Wrapper for fetch that handles 401 responses
   async function authFetch(url, options = {}) {
     const response = await fetch(url, options);
     if (response.status === 401) {
-      // Store the request details for retry
-      pendingRequest = { url, options };
-      showReAuthModal();
-      throw new Error('Authentication required');
+      // Store the request details for retry and return a promise that resolves when re-auth completes
+      return new Promise((resolve, reject) => {
+        pendingRequest = { url, options };
+        pendingResolve = resolve;
+        pendingReject = reject;
+        showReAuthModal();
+      });
     }
     return response;
   }
@@ -63,15 +68,33 @@
       showToast('Session restored');
 
       // Retry the pending request if there was one
-      if (pendingRequest) {
+      if (pendingRequest && pendingResolve) {
         const { url, options } = pendingRequest;
         pendingRequest = null;
-        // The original caller will need to retry their action
-        showToast('Please retry your last action');
+        try {
+          const retryResponse = await fetch(url, options);
+          pendingResolve(retryResponse);
+        } catch (err) {
+          pendingReject(err);
+        }
+        pendingResolve = null;
+        pendingReject = null;
       }
     } catch (err) {
       errorEl.textContent = 'Login failed: ' + err.message;
       errorEl.classList.remove('hidden');
+    }
+  }
+
+  // Cancel re-auth (close modal without logging in)
+  function cancelReAuth() {
+    document.getElementById('reAuthModal').classList.remove('active');
+    document.getElementById('reAuthPassword').value = '';
+    if (pendingReject) {
+      pendingReject(new Error('Authentication cancelled'));
+      pendingResolve = null;
+      pendingReject = null;
+      pendingRequest = null;
     }
   }
 

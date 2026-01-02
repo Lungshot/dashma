@@ -13,7 +13,7 @@ fastify.register(require('@fastify/cookie'));
 fastify.register(require('@fastify/session'), {
   secret: process.env.SESSION_SECRET || 'dashma-secret-change-in-production-min-32-chars',
   store: new FileSessionStore({
-    path: path.join(__dirname, '..', '..', 'data', 'sessions'),
+    path: path.join(__dirname, '..', 'data', 'sessions'), // Store in src/data/sessions (persisted by Docker volume)
     ttl: 86400, // 24 hours in seconds
     reapInterval: 3600 // Clean up expired sessions every hour
   }),

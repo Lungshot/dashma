@@ -278,6 +278,32 @@ async function registerRoutes(fastify) {
     return reply.redirect('/admin/login?error=1');
   });
 
+  // Admin login API (JSON-based for AJAX re-authentication)
+  fastify.post('/api/admin/login', async (request, reply) => {
+    const { username, password } = request.body;
+    const settings = config.getConfig().settings;
+
+    if (!username || !password) {
+      return reply.code(400).send({ error: 'Username and password are required' });
+    }
+
+    if (settings.authMode === 'basic' || settings.authMode === 'none') {
+      if (config.verifyAdmin(username, password)) {
+        request.session.authenticated = true;
+        request.session.username = username;
+
+        // Check if password change is required
+        if (config.mustChangePassword()) {
+          return { success: true, mustChangePassword: true };
+        }
+
+        return { success: true };
+      }
+    }
+
+    return reply.code(401).send({ error: 'Invalid username or password' });
+  });
+
   // EntraID login redirect
   fastify.get('/admin/login/entra', async (request, reply) => {
     const settings = config.getConfig().settings;
