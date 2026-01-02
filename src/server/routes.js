@@ -221,12 +221,14 @@ async function registerRoutes(fastify) {
     }
 
     const redirect = request.query.redirect || '/';
-    const redirectUri = settings.entraId.redirectUri || `${request.protocol}://${request.hostname}/callback`;
+    // Use configured redirect URI, falling back to /auth/callback
+    const redirectUri = settings.entraId?.redirectUri || `${request.protocol}://${request.hostname}/auth/callback`;
     const authUrl = await auth.getAuthUrl(redirectUri);
 
     if (authUrl) {
       // Store redirect in session for callback
       request.session.loginRedirect = redirect;
+      request.session.adminLoginAttempt = false; // Mark as user login
       return reply.redirect(authUrl);
     }
     return reply.redirect('/login?error=entra');
@@ -248,6 +250,43 @@ async function registerRoutes(fastify) {
       return reply.redirect(redirect);
     }
 
+    return reply.redirect('/login?error=entra');
+  });
+
+  // Universal EntraID callback (handles both admin and main site)
+  // This is the recommended redirect URI to configure in Azure
+  fastify.get('/auth/callback', async (request, reply) => {
+    const { code } = request.query;
+    const settings = config.getConfig().settings;
+    const redirectUri = settings.entraId?.redirectUri || `${request.protocol}://${request.hostname}/auth/callback`;
+
+    const result = await auth.handleCallback(code, redirectUri);
+    if (result) {
+      // Check if this was an admin login attempt
+      const isAdminLogin = request.session.adminLoginAttempt;
+      delete request.session.adminLoginAttempt;
+
+      if (isAdminLogin) {
+        request.session.authenticated = true;
+        request.session.username = result.account.username;
+        request.session.entraUser = true;
+        return reply.redirect('/admin');
+      } else {
+        // Main site login
+        request.session.userAuthenticated = true;
+        request.session.username = result.account.username;
+        request.session.entraUser = true;
+        const redirect = request.session.loginRedirect || '/';
+        delete request.session.loginRedirect;
+        return reply.redirect(redirect);
+      }
+    }
+
+    // Determine where to redirect on error
+    if (request.session.adminLoginAttempt) {
+      delete request.session.adminLoginAttempt;
+      return reply.redirect('/admin/login?error=entra');
+    }
     return reply.redirect('/login?error=entra');
   });
 
@@ -311,10 +350,12 @@ async function registerRoutes(fastify) {
       return reply.redirect('/admin/login');
     }
 
-    const redirectUri = settings.entraId.redirectUri || `${request.protocol}://${request.hostname}/admin/callback`;
+    // Use configured redirect URI, falling back to /auth/callback
+    const redirectUri = settings.entraId?.redirectUri || `${request.protocol}://${request.hostname}/auth/callback`;
     const authUrl = await auth.getAuthUrl(redirectUri);
-    
+
     if (authUrl) {
+      request.session.adminLoginAttempt = true; // Mark as admin login
       return reply.redirect(authUrl);
     }
     return reply.redirect('/admin/login?error=entra');
