@@ -1202,16 +1202,14 @@
           <p style="margin-bottom: 1rem;">Now we need to tell Azure where to send users after they sign in.</p>
           <ol class="wizard-instructions">
             <li>In the left sidebar, click <strong>"Authentication"</strong></li>
-            <li>Click <strong>"Add a platform"</strong></li>
-            <li>Select <strong>"Web"</strong></li>
-            <li>Copy and paste this Redirect URI:
+            <li>Click <strong>"Add Redirect URI"</strong> (or the + icon)</li>
+            <li>Paste this Redirect URI:
               <div class="copy-field" style="margin: 0.5rem 0;">
                 <input type="text" class="form-input" id="wizardRedirectUriDisplay" readonly style="background: rgba(255,255,255,0.05);">
                 <button type="button" class="btn btn-sm" onclick="copyWizardRedirectUri()" style="margin-left: 0.5rem;">Copy</button>
               </div>
             </li>
-            <li>Leave other settings as default</li>
-            <li>Click <strong>"Configure"</strong></li>
+            <li>Click <strong>"Save"</strong></li>
           </ol>
           <div class="form-group" style="margin-top: 1rem;">
             <label class="form-label">Redirect URI (auto-detected)</label>
