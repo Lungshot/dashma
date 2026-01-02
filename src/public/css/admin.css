@@ -321,6 +321,14 @@ body {
   gap: 8px;
 }
 
+.item-list-item.item-disabled {
+  opacity: 0.5;
+}
+
+.item-list-item.item-disabled .item-name {
+  text-decoration: line-through;
+}
+
 /* Tags Input */
 .tags-input-wrapper {
   display: flex;

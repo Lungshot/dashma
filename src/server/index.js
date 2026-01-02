@@ -4,6 +4,7 @@ const config = require('./config');
 const { registerRoutes } = require('./routes');
 const auth = require('./auth');
 const FileSessionStore = require('./session-store');
+const pingService = require('./ping-service');
 
 // Register plugins
 fastify.register(require('@fastify/formbody'));
@@ -44,6 +45,9 @@ fastify.get('/', { preHandler: auth.requireMainAuth }, async (request, reply) =>
 // Initialize config on startup
 config.loadConfig();
 
+// Start ping service for monitoring
+pingService.startService(() => config.getConfig());
+
 // Start server
 const start = async () => {
   try {
@@ -56,5 +60,16 @@ const start = async () => {
     process.exit(1);
   }
 };
+
+// Graceful shutdown
+const shutdown = async () => {
+  console.log('Shutting down...');
+  pingService.stopService();
+  await fastify.close();
+  process.exit(0);
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
 
 start();

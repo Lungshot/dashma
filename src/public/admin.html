@@ -20,6 +20,7 @@
         <a class="nav-item active" data-panel="appearance">Appearance</a>
         <a class="nav-item" data-panel="categories">Categories</a>
         <a class="nav-item" data-panel="links">Links</a>
+        <a class="nav-item" data-panel="widgets">Widgets</a>
         <a class="nav-item" data-panel="requests">Requests <span class="badge" id="requestsBadge"></span></a>
         <a class="nav-item" data-panel="auth">Authentication</a>
         <a class="nav-item" data-panel="backup">Backup</a>
@@ -527,6 +528,23 @@
         </div>
       </div>
 
+      <!-- Widgets Panel -->
+      <div class="panel" id="panel-widgets">
+        <div class="content-header">
+          <h2 class="content-title">Widgets</h2>
+          <p class="content-subtitle">Add and manage dashboard widgets</p>
+        </div>
+
+        <div class="card">
+          <div class="btn-group mb-20">
+            <button class="btn btn-primary" id="addWidgetBtn">Add Widget</button>
+          </div>
+          <ul class="item-list" id="widgetList">
+            <!-- Widgets rendered here -->
+          </ul>
+        </div>
+      </div>
+
       <!-- Requests Panel -->
       <div class="panel" id="panel-requests">
         <div class="content-header">
@@ -748,6 +766,36 @@
             <option value="sameTab">Same Tab</option>
           </select>
         </div>
+
+        <!-- Monitoring Section -->
+        <div class="form-group" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+          <label class="form-checkbox">
+            <input type="checkbox" id="linkMonitoringEnabled">
+            <span>Enable Status Monitoring</span>
+          </label>
+        </div>
+        <div id="monitoringOptions" style="display: none;">
+          <div class="form-group">
+            <label class="form-label">Host/IP (optional)</label>
+            <input type="text" class="form-input" id="linkMonitoringHost" placeholder="Leave blank to use URL domain">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Port (optional)</label>
+              <input type="number" class="form-input" id="linkMonitoringPort" placeholder="ICMP ping if blank">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Check Interval</label>
+              <select class="form-select" id="linkMonitoringInterval">
+                <option value="30">30 seconds</option>
+                <option value="60">1 minute</option>
+                <option value="120">2 minutes</option>
+                <option value="300">5 minutes</option>
+                <option value="600">10 minutes</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn" onclick="closeModal('linkModal')">Cancel</button>
@@ -781,6 +829,150 @@
       <div class="modal-footer">
         <button class="btn" onclick="closeModal('userModal')">Cancel</button>
         <button class="btn btn-primary" id="saveUserBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widget Modal -->
+  <div class="modal-overlay" id="widgetModal">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="widgetModalTitle">Add Widget</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="widgetId">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Widget Type</label>
+            <select class="form-select" id="widgetType">
+              <option value="server-monitor">Server Monitor</option>
+              <option value="clock">Clock</option>
+              <option value="weather">Weather</option>
+              <option value="iframe">Iframe Embed</option>
+              <option value="custom-html">Custom HTML</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Position</label>
+            <select class="form-select" id="widgetPosition">
+              <option value="above-categories">Above Categories</option>
+              <option value="below-categories">Below Categories</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Title (optional)</label>
+          <input type="text" class="form-input" id="widgetTitle" placeholder="Widget title">
+        </div>
+        <div class="form-group">
+          <label class="form-checkbox">
+            <input type="checkbox" id="widgetEnabled" checked>
+            <span>Enabled</span>
+          </label>
+        </div>
+
+        <!-- Server Monitor Config -->
+        <div id="configServerMonitor" class="widget-config-section">
+          <h4 class="card-title" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">Server Monitor Settings</h4>
+          <div class="form-group">
+            <label class="form-label">Servers to Monitor</label>
+            <div id="serverMonitorList" class="server-list"></div>
+            <button type="button" class="btn btn-sm" id="addServerBtn" style="margin-top: 0.5rem;">+ Add Server</button>
+          </div>
+        </div>
+
+        <!-- Clock Config -->
+        <div id="configClock" class="widget-config-section" style="display: none;">
+          <h4 class="card-title" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">Clock Settings</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Time Format</label>
+              <select class="form-select" id="clockFormat">
+                <option value="12">12-hour</option>
+                <option value="24">24-hour</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Timezone</label>
+              <select class="form-select" id="clockTimezone">
+                <option value="local">Local</option>
+                <option value="UTC">UTC</option>
+                <option value="America/New_York">New York</option>
+                <option value="America/Chicago">Chicago</option>
+                <option value="America/Denver">Denver</option>
+                <option value="America/Los_Angeles">Los Angeles</option>
+                <option value="Europe/London">London</option>
+                <option value="Europe/Paris">Paris</option>
+                <option value="Europe/Berlin">Berlin</option>
+                <option value="Asia/Tokyo">Tokyo</option>
+                <option value="Asia/Shanghai">Shanghai</option>
+                <option value="Australia/Sydney">Sydney</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-checkbox">
+              <input type="checkbox" id="clockShowDate" checked>
+              <span>Show Date</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="form-checkbox">
+              <input type="checkbox" id="clockShowSeconds">
+              <span>Show Seconds</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Weather Config -->
+        <div id="configWeather" class="widget-config-section" style="display: none;">
+          <h4 class="card-title" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">Weather Settings</h4>
+          <div class="form-group">
+            <label class="form-label">OpenWeatherMap API Key</label>
+            <input type="text" class="form-input" id="weatherApiKey" placeholder="Your API key">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Location</label>
+              <input type="text" class="form-input" id="weatherLocation" placeholder="City name or coordinates">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Units</label>
+              <select class="form-select" id="weatherUnits">
+                <option value="imperial">Fahrenheit</option>
+                <option value="metric">Celsius</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Iframe Config -->
+        <div id="configIframe" class="widget-config-section" style="display: none;">
+          <h4 class="card-title" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">Iframe Settings</h4>
+          <div class="form-group">
+            <label class="form-label">URL to Embed</label>
+            <input type="url" class="form-input" id="iframeUrl" placeholder="https://example.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Height (px)</label>
+            <input type="number" class="form-input" id="iframeHeight" value="300" placeholder="300">
+          </div>
+        </div>
+
+        <!-- Custom HTML Config -->
+        <div id="configCustomHtml" class="widget-config-section" style="display: none;">
+          <h4 class="card-title" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">Custom HTML Settings</h4>
+          <div class="form-group">
+            <label class="form-label">HTML Content</label>
+            <textarea class="form-input" id="customHtmlContent" rows="6" placeholder="<div>Your HTML here</div>"></textarea>
+          </div>
+          <p class="text-muted" style="font-size: 0.8rem;">Warning: Custom HTML can pose security risks. Only use trusted content.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('widgetModal')">Cancel</button>
+        <button class="btn btn-primary" id="saveWidgetBtn">Save</button>
       </div>
     </div>
   </div>

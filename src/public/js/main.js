@@ -3,10 +3,12 @@
   'use strict';
 
   let appData = null;
+  let monitoringStatuses = {};
   let searchOpen = false;
   let selectedSearchIndex = -1;
   let filteredResults = [];
   let collapsedCategories = JSON.parse(localStorage.getItem('dashma-collapsed') || '[]');
+  let monitoringPollInterval = null;
 
   // Initialize app
   async function init() {
@@ -14,11 +16,83 @@
       const response = await fetch('/api/public/data');
       appData = await response.json();
       applySettings();
+      renderWidgets('above-categories');
       renderCategories();
+      renderWidgets('below-categories');
       setupEventListeners();
+      // Start monitoring polling
+      startMonitoringPolling();
     } catch (err) {
       console.error('Failed to load data:', err);
     }
+  }
+
+  // Start polling for monitoring statuses
+  function startMonitoringPolling() {
+    // Initial fetch
+    fetchMonitoringStatuses();
+    // Poll every 30 seconds
+    monitoringPollInterval = setInterval(fetchMonitoringStatuses, 30000);
+  }
+
+  // Fetch monitoring statuses from API
+  async function fetchMonitoringStatuses() {
+    try {
+      const response = await fetch('/api/public/monitoring/status');
+      monitoringStatuses = await response.json();
+      updateStatusBubbles();
+    } catch (err) {
+      console.error('Failed to fetch monitoring statuses:', err);
+    }
+  }
+
+  // Update status bubbles without re-rendering everything
+  function updateStatusBubbles() {
+    // Update link status bubbles
+    document.querySelectorAll('[data-link-id]').forEach(linkEl => {
+      const linkId = linkEl.dataset.linkId;
+      const statusKey = `link-${linkId}`;
+      const status = monitoringStatuses[statusKey];
+
+      const existingBubble = linkEl.querySelector('.status-bubble');
+      const linkNameEl = linkEl.querySelector('.link-name');
+
+      if (status) {
+        const statusClass = status.status || 'unknown';
+        if (existingBubble) {
+          existingBubble.className = `status-bubble ${statusClass}`;
+        } else if (linkNameEl) {
+          const bubble = document.createElement('span');
+          bubble.className = `status-bubble ${statusClass}`;
+          linkNameEl.parentNode.insertBefore(bubble, linkNameEl);
+        }
+      } else if (existingBubble) {
+        existingBubble.remove();
+      }
+    });
+
+    // Update widget server statuses
+    document.querySelectorAll('.server-item[data-status-key]').forEach(serverEl => {
+      const statusKey = serverEl.dataset.statusKey;
+      const status = monitoringStatuses[statusKey];
+
+      const bubble = serverEl.querySelector('.status-bubble');
+      const latencyEl = serverEl.querySelector('.server-latency');
+      const lastCheckedEl = serverEl.querySelector('.last-checked');
+
+      if (status && bubble) {
+        bubble.className = `status-bubble ${status.status || 'unknown'}`;
+        if (latencyEl && status.latency !== null) {
+          latencyEl.textContent = `${status.latency}ms`;
+        } else if (latencyEl) {
+          latencyEl.textContent = '';
+        }
+        if (lastCheckedEl && status.lastChecked) {
+          const time = new Date(status.lastChecked).toLocaleTimeString();
+          lastCheckedEl.textContent = time;
+        }
+      }
+    });
   }
 
   // Apply settings to CSS variables
@@ -261,7 +335,7 @@
     const hoverClass = `hover-${s.linkHoverEffect}`;
     const target = (link.openBehavior || s.linkOpenBehavior) === 'newTab' ? '_blank' : '_self';
     const rel = target === '_blank' ? 'noopener noreferrer' : '';
-    
+
     let iconHtml = '';
     if (s.showLinkIcons) {
       // Pass link name as app hint for selfh.st icon lookup
@@ -269,7 +343,14 @@
       iconHtml = `<img class="link-icon" src="${iconSrc}" alt="" loading="lazy" onerror="this.style.display='none'">`;
     }
 
-    const tagsHtml = link.tags && link.tags.length > 0 
+    // Status bubble for monitored links (will be updated by polling)
+    const statusKey = `link-${link.id}`;
+    const status = monitoringStatuses[statusKey];
+    const statusBubble = link.monitoring?.enabled
+      ? `<span class="status-bubble ${status?.status || 'unknown'}"></span>`
+      : '';
+
+    const tagsHtml = link.tags && link.tags.length > 0
       ? `<div class="link-tags">${link.tags.map(t => `<span class="link-tag">${escapeHtml(t)}</span>`).join('')}</div>`
       : '';
 
@@ -277,6 +358,7 @@
       return `
         <a href="${escapeHtml(link.url)}" class="link-card ${hoverClass}" target="${target}" rel="${rel}" data-link-id="${link.id}">
           ${iconHtml}
+          ${statusBubble}
           <span class="link-name">${escapeHtml(link.name)}</span>
           ${tagsHtml}
         </a>
@@ -285,10 +367,259 @@
       return `
         <a href="${escapeHtml(link.url)}" class="link-text ${hoverClass}" target="${target}" rel="${rel}" data-link-id="${link.id}">
           ${iconHtml}
+          ${statusBubble}
           <span class="link-name">${escapeHtml(link.name)}</span>
         </a>
       `;
     }
+  }
+
+  // Render widgets for a position
+  function renderWidgets(position) {
+    const containerId = position === 'above-categories' ? 'widgetsAbove' : 'widgetsBelow';
+    let container = document.getElementById(containerId);
+
+    if (!container) {
+      // Create container if it doesn't exist
+      container = document.createElement('div');
+      container.id = containerId;
+      container.className = `widgets-container ${position === 'below-categories' ? 'position-below' : ''}`;
+
+      const grid = document.querySelector('.categories-grid');
+      if (position === 'above-categories') {
+        grid.parentNode.insertBefore(container, grid);
+      } else {
+        grid.parentNode.insertBefore(container, grid.nextSibling);
+      }
+    }
+
+    const widgets = (appData.widgets || [])
+      .filter(w => w.enabled && w.position === position)
+      .sort((a, b) => a.order - b.order);
+
+    container.innerHTML = widgets.map(widget => renderWidget(widget)).join('');
+
+    // Initialize clock widgets
+    initClockWidgets();
+    // Initialize weather widgets
+    initWeatherWidgets();
+  }
+
+  // Render a single widget
+  function renderWidget(widget) {
+    switch (widget.type) {
+      case 'server-monitor':
+        return renderServerMonitorWidget(widget);
+      case 'clock':
+        return renderClockWidget(widget);
+      case 'weather':
+        return renderWeatherWidget(widget);
+      case 'iframe':
+        return renderIframeWidget(widget);
+      case 'custom-html':
+        return renderCustomHtmlWidget(widget);
+      default:
+        return '';
+    }
+  }
+
+  // Server Monitor Widget
+  function renderServerMonitorWidget(widget) {
+    const servers = widget.config?.servers || [];
+    const showLastChecked = widget.config?.showLastChecked !== false;
+
+    const serversHtml = servers.map(server => {
+      const statusKey = `widget-${widget.id}-${server.id}`;
+      const status = monitoringStatuses[statusKey];
+      const statusClass = status?.status || 'unknown';
+      const latency = status?.latency !== null && status?.latency !== undefined ? `${status.latency}ms` : '';
+      const lastChecked = status?.lastChecked ? new Date(status.lastChecked).toLocaleTimeString() : '';
+
+      return `
+        <div class="server-item" data-status-key="${statusKey}">
+          <span class="status-bubble ${statusClass}"></span>
+          <span class="server-name">${escapeHtml(server.name || server.host)}</span>
+          <span class="server-latency">${latency}</span>
+          ${showLastChecked ? `<span class="last-checked">${lastChecked}</span>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="widget server-monitor-widget" data-widget-id="${widget.id}">
+        ${widget.title ? `<div class="widget-title">${escapeHtml(widget.title)}</div>` : ''}
+        <div class="server-list">
+          ${serversHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  // Clock Widget
+  function renderClockWidget(widget) {
+    const config = widget.config || {};
+    return `
+      <div class="widget clock-widget" data-widget-id="${widget.id}" data-timezone="${config.timezone || ''}" data-format="${config.format || '12h'}" data-show-date="${config.showDate !== false}" data-show-seconds="${config.showSeconds || false}">
+        ${widget.title ? `<div class="widget-title">${escapeHtml(widget.title)}</div>` : ''}
+        <div class="time"></div>
+        ${config.showDate !== false ? '<div class="date"></div>' : ''}
+      </div>
+    `;
+  }
+
+  // Initialize and update clock widgets
+  function initClockWidgets() {
+    function updateClocks() {
+      document.querySelectorAll('.clock-widget').forEach(clockEl => {
+        const timezoneRaw = clockEl.dataset.timezone;
+        const timezone = (timezoneRaw && timezoneRaw !== 'local') ? timezoneRaw : undefined;
+        const format = clockEl.dataset.format || '12';
+        const showDate = clockEl.dataset.showDate === 'true';
+        const showSeconds = clockEl.dataset.showSeconds === 'true';
+
+        const now = new Date();
+        const options = {};
+        if (timezone) options.timeZone = timezone;
+
+        let timeStr;
+        if (format === '24') {
+          options.hour = '2-digit';
+          options.minute = '2-digit';
+          if (showSeconds) options.second = '2-digit';
+          options.hour12 = false;
+        } else {
+          options.hour = 'numeric';
+          options.minute = '2-digit';
+          if (showSeconds) options.second = '2-digit';
+          options.hour12 = true;
+        }
+
+        timeStr = now.toLocaleTimeString(undefined, options);
+
+        const timeEl = clockEl.querySelector('.time');
+        if (timeEl) timeEl.textContent = timeStr;
+
+        if (showDate) {
+          const dateEl = clockEl.querySelector('.date');
+          if (dateEl) {
+            const dateOptions = { timeZone: timezone, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateEl.textContent = now.toLocaleDateString(undefined, dateOptions);
+          }
+        }
+      });
+    }
+
+    updateClocks();
+    setInterval(updateClocks, 1000);
+  }
+
+  // Initialize weather widgets
+  function initWeatherWidgets() {
+    document.querySelectorAll('.weather-widget').forEach(weatherEl => {
+      const apiKey = weatherEl.dataset.apiKey;
+      const location = weatherEl.dataset.location;
+      const units = weatherEl.dataset.units || 'imperial';
+
+      if (!apiKey || !location) {
+        weatherEl.querySelector('.condition').textContent = 'API key or location not set';
+        return;
+      }
+
+      fetchWeather(weatherEl, apiKey, location, units);
+    });
+
+    // Refresh weather every 10 minutes
+    setInterval(() => {
+      document.querySelectorAll('.weather-widget').forEach(weatherEl => {
+        const apiKey = weatherEl.dataset.apiKey;
+        const location = weatherEl.dataset.location;
+        const units = weatherEl.dataset.units || 'imperial';
+        if (apiKey && location) {
+          fetchWeather(weatherEl, apiKey, location, units);
+        }
+      });
+    }, 600000);
+  }
+
+  // Fetch weather data from OpenWeatherMap
+  async function fetchWeather(weatherEl, apiKey, location, units) {
+    try {
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&units=${units}&appid=${apiKey}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Weather API error');
+      }
+
+      const data = await response.json();
+      const tempUnit = units === 'metric' ? '°C' : '°F';
+      const temp = Math.round(data.main.temp);
+      const condition = data.weather[0]?.description || '';
+
+      weatherEl.querySelector('.temperature').textContent = `${temp}${tempUnit}`;
+      weatherEl.querySelector('.condition').textContent = condition.charAt(0).toUpperCase() + condition.slice(1);
+
+      // Add weather icon if available
+      if (data.weather[0]?.icon) {
+        const iconUrl = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+        const existingIcon = weatherEl.querySelector('.weather-icon');
+        if (existingIcon) {
+          existingIcon.src = iconUrl;
+        } else {
+          const iconImg = document.createElement('img');
+          iconImg.className = 'weather-icon';
+          iconImg.src = iconUrl;
+          iconImg.alt = condition;
+          weatherEl.querySelector('.temperature').before(iconImg);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch weather:', err);
+      weatherEl.querySelector('.condition').textContent = 'Unable to load weather';
+    }
+  }
+
+  // Weather Widget
+  function renderWeatherWidget(widget) {
+    const config = widget.config || {};
+    // Weather will be fetched and updated separately
+    return `
+      <div class="widget weather-widget" data-widget-id="${widget.id}" data-api-key="${config.apiKey || ''}" data-location="${config.location || ''}" data-units="${config.units || 'imperial'}">
+        ${widget.title ? `<div class="widget-title">${escapeHtml(widget.title)}</div>` : ''}
+        <div class="temperature">--°</div>
+        <div class="condition">Loading...</div>
+        <div class="location">${escapeHtml(config.location || '')}</div>
+      </div>
+    `;
+  }
+
+  // Iframe Widget
+  function renderIframeWidget(widget) {
+    const config = widget.config || {};
+    const height = config.height || '300px';
+    const sandbox = config.sandbox || 'allow-scripts allow-same-origin';
+
+    return `
+      <div class="widget iframe-widget" data-widget-id="${widget.id}">
+        ${widget.title ? `<div class="widget-title">${escapeHtml(widget.title)}</div>` : ''}
+        <iframe src="${escapeHtml(config.url || '')}" style="height: ${height};" sandbox="${sandbox}" ${config.allowFullscreen ? 'allowfullscreen' : ''}></iframe>
+      </div>
+    `;
+  }
+
+  // Custom HTML Widget
+  function renderCustomHtmlWidget(widget) {
+    const config = widget.config || {};
+    const customCss = config.css ? `<style>${config.css}</style>` : '';
+
+    return `
+      <div class="widget custom-html-widget" data-widget-id="${widget.id}">
+        ${widget.title ? `<div class="widget-title">${escapeHtml(widget.title)}</div>` : ''}
+        ${customCss}
+        <div class="custom-content">${config.html || ''}</div>
+      </div>
+    `;
   }
 
   // Toggle category collapse

@@ -36,7 +36,13 @@ const defaultConfig = {
     },
     showRequestLink: false,
     requestLinkText: 'Request Link Addition',
-    requestLinkUrl: '/request'
+    requestLinkUrl: '/request',
+    // Monitoring settings
+    monitoringSettings: {
+      defaultInterval: 60,
+      timeout: 5000,
+      retries: 2
+    }
   },
   admin: {
     username: 'admin',
@@ -46,6 +52,7 @@ const defaultConfig = {
   users: [], // Regular users for main site auth: { id, username, passwordHash, createdAt }
   categories: [],
   links: [],
+  widgets: [], // { id, type, enabled, position, order, title, config }
   requests: {
     categories: [], // { id, name, status: 'pending'|'approved'|'denied', submittedAt, submittedBy, reviewedAt, reviewedBy }
     links: [] // { id, name, url, categoryId, tags, status: 'pending'|'approved'|'denied', submittedAt, submittedBy, reviewedAt, reviewedBy }
@@ -142,8 +149,105 @@ function getPublicSettings() {
     mainAuthMode: config.settings.mainAuthMode,
     showRequestLink: config.settings.showRequestLink,
     requestLinkText: config.settings.requestLinkText,
-    requestLinkUrl: config.settings.requestLinkUrl
+    requestLinkUrl: config.settings.requestLinkUrl,
+    monitoringSettings: config.settings.monitoringSettings
   };
+}
+
+// Widget functions
+function getWidgets() {
+  const config = getConfig();
+  if (!config.widgets) {
+    config.widgets = [];
+    saveConfig();
+  }
+  return config.widgets;
+}
+
+function addWidget(widget) {
+  const config = getConfig();
+  if (!config.widgets) {
+    config.widgets = [];
+  }
+
+  const position = widget.position || 'above-categories';
+  const widgetsInPosition = config.widgets.filter(w => w.position === position);
+
+  const newWidget = {
+    id: uuidv4(),
+    type: widget.type,
+    enabled: widget.enabled !== false,
+    position: position,
+    order: widgetsInPosition.length,
+    title: widget.title || null,
+    config: widget.config || {}
+  };
+
+  config.widgets.push(newWidget);
+  saveConfig();
+  return newWidget;
+}
+
+function updateWidget(id, updates) {
+  const config = getConfig();
+  const index = config.widgets.findIndex(w => w.id === id);
+  if (index === -1) throw new Error('Widget not found');
+  config.widgets[index] = { ...config.widgets[index], ...updates };
+  saveConfig();
+  return config.widgets[index];
+}
+
+function deleteWidget(id) {
+  const config = getConfig();
+  config.widgets = config.widgets.filter(w => w.id !== id);
+  saveConfig();
+}
+
+function reorderWidgets(position, orderedIds) {
+  const config = getConfig();
+  orderedIds.forEach((id, index) => {
+    const widget = config.widgets.find(w => w.id === id);
+    if (widget && widget.position === position) {
+      widget.order = index;
+    }
+  });
+  saveConfig();
+}
+
+// Link monitoring functions
+function updateLinkMonitoring(linkId, monitoring) {
+  const config = getConfig();
+  const link = config.links.find(l => l.id === linkId);
+  if (!link) throw new Error('Link not found');
+
+  link.monitoring = {
+    enabled: monitoring.enabled || false,
+    host: monitoring.host || null,
+    port: monitoring.port || null,
+    interval: monitoring.interval || config.settings.monitoringSettings?.defaultInterval || 60
+  };
+
+  saveConfig();
+  return link;
+}
+
+function getMonitoringSettings() {
+  const config = getConfig();
+  return config.settings.monitoringSettings || {
+    defaultInterval: 60,
+    timeout: 5000,
+    retries: 2
+  };
+}
+
+function updateMonitoringSettings(settings) {
+  const config = getConfig();
+  config.settings.monitoringSettings = {
+    ...config.settings.monitoringSettings,
+    ...settings
+  };
+  saveConfig();
+  return config.settings.monitoringSettings;
 }
 
 // Category functions
@@ -558,5 +662,15 @@ module.exports = {
   approveLinkRequest,
   denyRequest,
   deleteRequest,
-  getPendingCategoryRequests
+  getPendingCategoryRequests,
+  // Widget management
+  getWidgets,
+  addWidget,
+  updateWidget,
+  deleteWidget,
+  reorderWidgets,
+  // Monitoring management
+  updateLinkMonitoring,
+  getMonitoringSettings,
+  updateMonitoringSettings
 };

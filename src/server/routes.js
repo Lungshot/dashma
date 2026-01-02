@@ -4,6 +4,7 @@ const https = require('https');
 const http = require('http');
 const config = require('./config');
 const auth = require('./auth');
+const pingService = require('./ping-service');
 
 // Helper to fetch a URL and check if it returns a valid image
 function fetchImage(url, timeout = 3000) {
@@ -83,8 +84,14 @@ async function registerRoutes(fastify) {
     return {
       settings: config.getPublicSettings(),
       categories: config.getCategories(),
-      links: config.getLinks()
+      links: config.getLinks(),
+      widgets: config.getWidgets().filter(w => w.enabled)
     };
+  });
+
+  // Public API - get monitoring status for all hosts
+  fastify.get('/api/public/monitoring/status', async (request, reply) => {
+    return pingService.getAllStatuses();
   });
 
   // Favicon proxy - fetch favicon for a URL with fallback chain and fuzzy app name matching
@@ -592,6 +599,84 @@ async function registerRoutes(fastify) {
     fastify.delete('/api/admin/requests/link/:id', async (request) => {
       config.deleteRequest('link', request.params.id);
       return { success: true };
+    });
+
+    // Widget management (admin)
+    fastify.get('/api/admin/widgets', async () => {
+      return config.getWidgets();
+    });
+
+    fastify.post('/api/admin/widgets', async (request, reply) => {
+      try {
+        const widget = config.addWidget(request.body);
+        pingService.refreshHosts();
+        return widget;
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
+    });
+
+    fastify.put('/api/admin/widgets/:id', async (request, reply) => {
+      try {
+        const widget = config.updateWidget(request.params.id, request.body);
+        pingService.refreshHosts();
+        return widget;
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
+    });
+
+    fastify.delete('/api/admin/widgets/:id', async (request) => {
+      config.deleteWidget(request.params.id);
+      pingService.refreshHosts();
+      return { success: true };
+    });
+
+    fastify.put('/api/admin/widgets/reorder', async (request, reply) => {
+      const { position, ids } = request.body;
+      if (!position || !ids) {
+        return reply.code(400).send({ error: 'Position and ids required' });
+      }
+      config.reorderWidgets(position, ids);
+      return { success: true };
+    });
+
+    // Link monitoring (admin)
+    fastify.put('/api/admin/links/:id/monitoring', async (request, reply) => {
+      try {
+        const link = config.updateLinkMonitoring(request.params.id, request.body);
+        pingService.refreshHosts();
+        return link;
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
+    });
+
+    // Monitoring management (admin)
+    fastify.get('/api/admin/monitoring/status', async () => {
+      return pingService.getAllStatuses();
+    });
+
+    fastify.post('/api/admin/monitoring/check/:hostId', async (request, reply) => {
+      const status = await pingService.forceCheck(request.params.hostId);
+      if (!status) {
+        return reply.code(404).send({ error: 'Host not found' });
+      }
+      return status;
+    });
+
+    fastify.get('/api/admin/monitoring/settings', async () => {
+      return config.getMonitoringSettings();
+    });
+
+    fastify.put('/api/admin/monitoring/settings', async (request, reply) => {
+      try {
+        const settings = config.updateMonitoringSettings(request.body);
+        pingService.refreshHosts();
+        return settings;
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
     });
   });
 

@@ -86,6 +86,7 @@
     populateForm();
     renderCategories();
     renderLinks();
+    renderWidgets();
     renderUsers();
     renderRequests();
     updateRequestsBadge();
@@ -258,6 +259,15 @@
     });
     document.getElementById('saveLinkBtn').addEventListener('click', saveLink);
     document.getElementById('linkCategoryFilter').addEventListener('change', renderLinks);
+
+    // Link monitoring toggle
+    document.getElementById('linkMonitoringEnabled').addEventListener('change', toggleMonitoringOptions);
+
+    // Widgets
+    document.getElementById('addWidgetBtn').addEventListener('click', () => openWidgetModal());
+    document.getElementById('saveWidgetBtn').addEventListener('click', saveWidget);
+    document.getElementById('widgetType').addEventListener('change', handleWidgetTypeChange);
+    document.getElementById('addServerBtn').addEventListener('click', addServerRow);
 
     // Auth
     document.getElementById('authMode').addEventListener('change', toggleEntraSettings);
@@ -518,6 +528,13 @@
     const userManagementCard = document.getElementById('userManagementCard');
     // Show user management only when main site uses basic auth
     userManagementCard.style.display = mainAuthMode === 'basic' ? 'block' : 'none';
+  }
+
+  // Toggle monitoring options visibility
+  function toggleMonitoringOptions() {
+    const enabled = document.getElementById('linkMonitoringEnabled').checked;
+    const optionsContainer = document.getElementById('monitoringOptions');
+    optionsContainer.style.display = enabled ? 'block' : 'none';
   }
 
   // Save appearance settings
@@ -803,6 +820,9 @@
       if (type === 'categories') {
         endpoint = '/api/admin/categories/reorder';
         body = { ids };
+      } else if (type === 'widgets') {
+        endpoint = '/api/admin/widgets/reorder';
+        body = { ids };
       } else {
         endpoint = '/api/admin/links/reorder';
         // For links, get the category from the filter or the first item
@@ -826,6 +846,8 @@
       // Re-render to reset order
       if (type === 'categories') {
         renderCategories();
+      } else if (type === 'widgets') {
+        renderWidgets();
       } else {
         renderLinks();
       }
@@ -1007,6 +1029,13 @@
       document.getElementById('linkTags').value = link && link.tags ? link.tags.join(', ') : '';
       document.getElementById('linkCustomIcon').value = link ? link.customIcon || '' : '';
       document.getElementById('linkOpenBehaviorModal').value = link ? link.openBehavior || '' : '';
+
+      // Monitoring fields
+      const monitoring = link && link.monitoring ? link.monitoring : {};
+      document.getElementById('linkMonitoringEnabled').checked = monitoring.enabled || false;
+      document.getElementById('linkMonitoringHost').value = monitoring.host || '';
+      document.getElementById('linkMonitoringPort').value = monitoring.port || '';
+      setSelectValue('linkMonitoringInterval', monitoring.interval || 60);
     } else {
       title.textContent = 'Add Link';
       document.getElementById('linkId').value = '';
@@ -1018,7 +1047,16 @@
       document.getElementById('linkTags').value = '';
       document.getElementById('linkCustomIcon').value = '';
       document.getElementById('linkOpenBehaviorModal').value = '';
+
+      // Reset monitoring fields
+      document.getElementById('linkMonitoringEnabled').checked = false;
+      document.getElementById('linkMonitoringHost').value = '';
+      document.getElementById('linkMonitoringPort').value = '';
+      document.getElementById('linkMonitoringInterval').value = '60';
     }
+
+    // Update monitoring options visibility
+    toggleMonitoringOptions();
 
     modal.classList.add('active');
     document.getElementById('linkName').focus();
@@ -1038,6 +1076,12 @@
     const customIcon = document.getElementById('linkCustomIcon').value.trim();
     const openBehavior = document.getElementById('linkOpenBehaviorModal').value;
 
+    // Monitoring fields
+    const monitoringEnabled = document.getElementById('linkMonitoringEnabled').checked;
+    const monitoringHost = document.getElementById('linkMonitoringHost').value.trim();
+    const monitoringPort = document.getElementById('linkMonitoringPort').value;
+    const monitoringInterval = parseInt(document.getElementById('linkMonitoringInterval').value);
+
     if (!name || !url) {
       showToast('Name and URL are required', true);
       return;
@@ -1056,7 +1100,13 @@
       categoryId,
       tags,
       customIcon: customIcon || null,
-      openBehavior: openBehavior || null
+      openBehavior: openBehavior || null,
+      monitoring: {
+        enabled: monitoringEnabled,
+        host: monitoringHost || null,
+        port: monitoringPort ? parseInt(monitoringPort) : null,
+        interval: monitoringInterval || 60
+      }
     };
 
     try {
@@ -1107,6 +1157,297 @@
       }
     }
   };
+
+  // ==================== WIDGET MANAGEMENT ====================
+
+  // Render widgets list
+  function renderWidgets() {
+    const list = document.getElementById('widgetList');
+    const widgets = (appConfig.widgets || []).sort((a, b) => a.order - b.order);
+
+    if (widgets.length === 0) {
+      list.innerHTML = '<li class="text-muted text-center">No widgets yet</li>';
+      return;
+    }
+
+    const typeLabels = {
+      'server-monitor': 'Server Monitor',
+      'clock': 'Clock',
+      'weather': 'Weather',
+      'iframe': 'Iframe',
+      'custom-html': 'Custom HTML'
+    };
+
+    list.innerHTML = widgets.map(widget => {
+      const typeLabel = typeLabels[widget.type] || widget.type;
+      const posLabel = widget.position === 'above-categories' ? 'Above' : 'Below';
+      const statusClass = widget.enabled ? '' : 'item-disabled';
+
+      return `
+        <li class="item-list-item ${statusClass}" data-id="${widget.id}" draggable="true">
+          <span class="item-drag-handle">☰</span>
+          <div class="item-info">
+            <div class="item-name">${escapeHtml(widget.title || typeLabel)}</div>
+            <div class="item-meta">${typeLabel} • ${posLabel} • ${widget.enabled ? 'Enabled' : 'Disabled'}</div>
+          </div>
+          <div class="item-actions">
+            <button class="btn btn-sm" onclick="editWidget('${widget.id}')">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteWidget('${widget.id}')">Delete</button>
+          </div>
+        </li>
+      `;
+    }).join('');
+
+    // Setup drag and drop for widgets
+    setupDragAndDrop(list, 'widgets');
+  }
+
+  // Handle widget type change
+  function handleWidgetTypeChange() {
+    const type = document.getElementById('widgetType').value;
+
+    // Hide all config sections
+    document.querySelectorAll('.widget-config-section').forEach(el => {
+      el.style.display = 'none';
+    });
+
+    // Show relevant config section
+    const configMap = {
+      'server-monitor': 'configServerMonitor',
+      'clock': 'configClock',
+      'weather': 'configWeather',
+      'iframe': 'configIframe',
+      'custom-html': 'configCustomHtml'
+    };
+
+    const configId = configMap[type];
+    if (configId) {
+      document.getElementById(configId).style.display = 'block';
+    }
+  }
+
+  // Add server row for server monitor widget
+  function addServerRow(serverData = null) {
+    const list = document.getElementById('serverMonitorList');
+    const rowId = 'server-' + Date.now();
+
+    const row = document.createElement('div');
+    row.className = 'server-row';
+    row.id = rowId;
+    row.style.cssText = 'display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center;';
+
+    row.innerHTML = `
+      <input type="text" class="form-input server-name" placeholder="Name" value="${serverData?.name || ''}" style="flex: 1;">
+      <input type="text" class="form-input server-host" placeholder="Host/IP" value="${serverData?.host || ''}" style="flex: 1;">
+      <input type="number" class="form-input server-port" placeholder="Port" value="${serverData?.port || ''}" style="width: 80px;">
+      <button type="button" class="btn btn-sm btn-danger" onclick="removeServerRow('${rowId}')" style="padding: 0.3rem 0.5rem;">×</button>
+    `;
+
+    list.appendChild(row);
+  }
+
+  window.removeServerRow = function(rowId) {
+    document.getElementById(rowId)?.remove();
+  };
+
+  // Get servers from modal
+  function getServersFromModal() {
+    const servers = [];
+    document.querySelectorAll('#serverMonitorList .server-row').forEach(row => {
+      const name = row.querySelector('.server-name').value.trim();
+      const host = row.querySelector('.server-host').value.trim();
+      const port = row.querySelector('.server-port').value;
+
+      if (host) {
+        servers.push({
+          id: 'srv-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+          name: name || host,
+          host,
+          port: port ? parseInt(port) : null
+        });
+      }
+    });
+    return servers;
+  }
+
+  // Get widget config based on type
+  function getWidgetConfig(type) {
+    switch (type) {
+      case 'server-monitor':
+        return {
+          servers: getServersFromModal()
+        };
+      case 'clock':
+        return {
+          format: document.getElementById('clockFormat').value,
+          timezone: document.getElementById('clockTimezone').value,
+          showDate: document.getElementById('clockShowDate').checked,
+          showSeconds: document.getElementById('clockShowSeconds').checked
+        };
+      case 'weather':
+        return {
+          apiKey: document.getElementById('weatherApiKey').value.trim(),
+          location: document.getElementById('weatherLocation').value.trim(),
+          units: document.getElementById('weatherUnits').value
+        };
+      case 'iframe':
+        return {
+          url: document.getElementById('iframeUrl').value.trim(),
+          height: parseInt(document.getElementById('iframeHeight').value) || 300
+        };
+      case 'custom-html':
+        return {
+          html: document.getElementById('customHtmlContent').value
+        };
+      default:
+        return {};
+    }
+  }
+
+  // Set widget config in modal
+  function setWidgetConfig(type, config) {
+    if (!config) return;
+
+    switch (type) {
+      case 'server-monitor':
+        document.getElementById('serverMonitorList').innerHTML = '';
+        (config.servers || []).forEach(server => addServerRow(server));
+        break;
+      case 'clock':
+        setSelectValue('clockFormat', config.format || '12');
+        setSelectValue('clockTimezone', config.timezone || 'local');
+        document.getElementById('clockShowDate').checked = config.showDate !== false;
+        document.getElementById('clockShowSeconds').checked = config.showSeconds || false;
+        break;
+      case 'weather':
+        document.getElementById('weatherApiKey').value = config.apiKey || '';
+        document.getElementById('weatherLocation').value = config.location || '';
+        setSelectValue('weatherUnits', config.units || 'imperial');
+        break;
+      case 'iframe':
+        document.getElementById('iframeUrl').value = config.url || '';
+        document.getElementById('iframeHeight').value = config.height || 300;
+        break;
+      case 'custom-html':
+        document.getElementById('customHtmlContent').value = config.html || '';
+        break;
+    }
+  }
+
+  // Open widget modal
+  window.openWidgetModal = function(widgetId = null) {
+    const modal = document.getElementById('widgetModal');
+    const title = document.getElementById('widgetModalTitle');
+
+    if (widgetId) {
+      const widget = (appConfig.widgets || []).find(w => w.id === widgetId);
+      title.textContent = 'Edit Widget';
+      document.getElementById('widgetId').value = widgetId;
+      document.getElementById('widgetType').value = widget?.type || 'server-monitor';
+      document.getElementById('widgetPosition').value = widget?.position || 'above-categories';
+      document.getElementById('widgetTitle').value = widget?.title || '';
+      document.getElementById('widgetEnabled').checked = widget?.enabled !== false;
+
+      // Set config
+      handleWidgetTypeChange();
+      setWidgetConfig(widget?.type, widget?.config);
+    } else {
+      title.textContent = 'Add Widget';
+      document.getElementById('widgetId').value = '';
+      document.getElementById('widgetType').value = 'server-monitor';
+      document.getElementById('widgetPosition').value = 'above-categories';
+      document.getElementById('widgetTitle').value = '';
+      document.getElementById('widgetEnabled').checked = true;
+
+      // Reset configs
+      handleWidgetTypeChange();
+      document.getElementById('serverMonitorList').innerHTML = '';
+      document.getElementById('clockFormat').value = '12';
+      document.getElementById('clockTimezone').value = 'local';
+      document.getElementById('clockShowDate').checked = true;
+      document.getElementById('clockShowSeconds').checked = false;
+      document.getElementById('weatherApiKey').value = '';
+      document.getElementById('weatherLocation').value = '';
+      document.getElementById('weatherUnits').value = 'imperial';
+      document.getElementById('iframeUrl').value = '';
+      document.getElementById('iframeHeight').value = '300';
+      document.getElementById('customHtmlContent').value = '';
+    }
+
+    modal.classList.add('active');
+  };
+
+  window.editWidget = function(id) {
+    openWidgetModal(id);
+  };
+
+  // Save widget
+  async function saveWidget() {
+    const id = document.getElementById('widgetId').value;
+    const type = document.getElementById('widgetType').value;
+    const position = document.getElementById('widgetPosition').value;
+    const widgetTitle = document.getElementById('widgetTitle').value.trim();
+    const enabled = document.getElementById('widgetEnabled').checked;
+    const config = getWidgetConfig(type);
+
+    const widgetData = {
+      type,
+      position,
+      title: widgetTitle || null,
+      enabled,
+      config
+    };
+
+    try {
+      let response;
+      if (id) {
+        response = await authFetch(`/api/admin/widgets/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(widgetData)
+        });
+      } else {
+        response = await authFetch('/api/admin/widgets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(widgetData)
+        });
+      }
+
+      if (!response.ok) throw new Error('Failed to save');
+
+      await loadConfig();
+      renderWidgets();
+      closeModal('widgetModal');
+      showToast(id ? 'Widget updated' : 'Widget created');
+    } catch (err) {
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to save widget', true);
+      }
+    }
+  }
+
+  // Delete widget
+  window.deleteWidget = async function(id) {
+    if (!confirm('Delete this widget?')) return;
+
+    try {
+      const response = await authFetch(`/api/admin/widgets/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete');
+
+      await loadConfig();
+      renderWidgets();
+      showToast('Widget deleted');
+    } catch (err) {
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to delete widget', true);
+      }
+    }
+  };
+
+  // ==================== END WIDGET MANAGEMENT ====================
 
   // Save auth settings
   async function saveAuth() {

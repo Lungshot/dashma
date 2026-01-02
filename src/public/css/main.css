@@ -884,3 +884,167 @@ body {
   color: var(--text-color, #ffffff);
   text-decoration: underline;
 }
+
+/* Status Bubble - Monitoring indicator */
+.status-bubble {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.status-bubble.online {
+  background-color: #4ade80;
+  box-shadow: 0 0 6px #4ade80;
+}
+
+.status-bubble.offline {
+  background-color: #f87171;
+  box-shadow: 0 0 6px #f87171;
+}
+
+.status-bubble.unknown {
+  background-color: #a1a1aa;
+}
+
+/* Widget Containers */
+.widgets-container {
+  margin-bottom: 30px;
+}
+
+.widgets-container.position-below {
+  margin-top: 30px;
+  margin-bottom: 0;
+}
+
+.widgets-container:empty {
+  display: none;
+}
+
+/* Widget Base Styles */
+.widget {
+  background: var(--category-bg-color, rgba(255,255,255,0.03));
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.widget-title {
+  font-family: var(--title-font, 'Courier New', Courier, monospace);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--category-title-color, var(--text-color, #ffffff));
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Server Monitor Widget */
+.server-monitor-widget .server-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.server-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  background: var(--link-card-bg-color, rgba(255,255,255,0.05));
+  border-radius: 8px;
+  gap: 12px;
+}
+
+.server-item .server-name {
+  flex-grow: 1;
+  font-size: 0.95rem;
+}
+
+.server-item .server-latency {
+  color: var(--accent-color);
+  font-size: 0.85rem;
+}
+
+.server-item .last-checked {
+  color: rgba(255,255,255,0.5);
+  font-size: 0.75rem;
+}
+
+/* Clock Widget */
+.clock-widget {
+  text-align: center;
+  padding: 30px 20px;
+}
+
+.clock-widget .time {
+  font-size: 3rem;
+  font-weight: 300;
+  font-family: var(--font-family);
+  letter-spacing: 0.1em;
+}
+
+.clock-widget .date {
+  color: var(--accent-color);
+  font-size: 1rem;
+  margin-top: 10px;
+}
+
+/* Weather Widget */
+.weather-widget {
+  text-align: center;
+  padding: 20px;
+}
+
+.weather-widget .temperature {
+  font-size: 2.5rem;
+  font-weight: 300;
+}
+
+.weather-widget .condition {
+  color: var(--accent-color);
+  margin-top: 5px;
+}
+
+.weather-widget .location {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-top: 10px;
+}
+
+.weather-widget .weather-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 5px;
+}
+
+/* Iframe Widget */
+.iframe-widget iframe {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+}
+
+/* Custom HTML Widget */
+.custom-html-widget {
+  /* Scoped styles from widget config will be applied */
+}
+
+/* Widget responsive */
+@media (max-width: 600px) {
+  .widget {
+    padding: 15px;
+  }
+
+  .clock-widget .time {
+    font-size: 2rem;
+  }
+
+  .weather-widget .temperature {
+    font-size: 2rem;
+  }
+}
