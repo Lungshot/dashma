@@ -153,9 +153,14 @@
         document.getElementById('site-title').textContent = data.settings.siteName || 'Dashma';
         document.title = (data.settings.siteName || 'Dashma') + ' - Login';
 
-        // Show EntraID option if configured for main site
+        // Handle auth mode - SSO only hides local login form
         if (data.settings.mainAuthMode === 'entraId') {
+          // Hide local login form, show only SSO
+          document.getElementById('login-form').classList.add('hidden');
           document.getElementById('entra-section').classList.remove('hidden');
+          document.querySelector('#entra-section .divider').classList.add('hidden');
+          // Remove margin from SSO button since there's no divider
+          document.querySelector('.btn-entra').style.marginTop = '0';
         }
       });
   </script>
