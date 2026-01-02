@@ -880,6 +880,116 @@
             <div id="serverMonitorList" class="server-list"></div>
             <button type="button" class="btn btn-sm" id="addServerBtn" style="margin-top: 0.5rem;">+ Add Server</button>
           </div>
+
+          <h4 class="card-title" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">Display Options</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Display Mode</label>
+              <select class="form-select" id="serverDisplayMode">
+                <option value="list">List (vertical)</option>
+                <option value="grid">Grid (columns)</option>
+                <option value="compact">Compact (inline)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Columns (Grid mode)</label>
+              <select class="form-select" id="serverColumns">
+                <option value="2">2 Columns</option>
+                <option value="3">3 Columns</option>
+                <option value="4">4 Columns</option>
+                <option value="auto">Auto-fit</option>
+              </select>
+            </div>
+          </div>
+
+          <h4 class="card-title" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">Item Styling</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Item Style</label>
+              <select class="form-select" id="serverItemStyle">
+                <option value="card">Card (with background)</option>
+                <option value="text">Text Only</option>
+                <option value="minimal">Minimal (icon + name)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Text Size</label>
+              <select class="form-select" id="serverTextSize">
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Item Background</label>
+              <div class="color-picker-wrapper">
+                <input type="color" class="color-picker" id="serverItemBgPicker" value="#ffffff">
+                <input type="text" class="form-input color-value" id="serverItemBgColor" value="" placeholder="Use theme default">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Text Color</label>
+              <div class="color-picker-wrapper">
+                <input type="color" class="color-picker" id="serverTextColorPicker" value="#ffffff">
+                <input type="text" class="form-input color-value" id="serverTextColor" value="" placeholder="Use theme default">
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Hover Effect</label>
+              <select class="form-select" id="serverHoverEffect">
+                <option value="none">None</option>
+                <option value="glow">Glow</option>
+                <option value="scale">Scale</option>
+                <option value="fade">Fade</option>
+                <option value="slide">Slide</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Border Radius</label>
+              <select class="form-select" id="serverBorderRadius">
+                <option value="none">None (square)</option>
+                <option value="small">Small (4px)</option>
+                <option value="medium">Medium (8px)</option>
+                <option value="large">Large (12px)</option>
+                <option value="pill">Pill (24px)</option>
+              </select>
+            </div>
+          </div>
+
+          <h4 class="card-title" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">Widget Container</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Container Style</label>
+              <select class="form-select" id="serverContainerStyle">
+                <option value="card">Card (with background)</option>
+                <option value="transparent">Transparent</option>
+                <option value="bordered">Border Only</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Container Background</label>
+              <div class="color-picker-wrapper">
+                <input type="color" class="color-picker" id="serverContainerBgPicker" value="#ffffff">
+                <input type="text" class="form-input color-value" id="serverContainerBgColor" value="" placeholder="Use theme default">
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-checkbox">
+              <input type="checkbox" id="serverShowLatency" checked>
+              <span>Show Latency</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="form-checkbox">
+              <input type="checkbox" id="serverShowLastChecked">
+              <span>Show Last Checked Time</span>
+            </label>
+          </div>
         </div>
 
         <!-- Clock Config -->

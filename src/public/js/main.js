@@ -425,8 +425,54 @@
 
   // Server Monitor Widget
   function renderServerMonitorWidget(widget) {
-    const servers = widget.config?.servers || [];
-    const showLastChecked = widget.config?.showLastChecked !== false;
+    const config = widget.config || {};
+    const servers = config.servers || [];
+    const showLatency = config.showLatency !== false;
+    const showLastChecked = config.showLastChecked || false;
+
+    // Build widget classes for styling
+    const widgetClasses = ['widget', 'server-monitor-widget'];
+
+    // Display mode classes
+    if (config.displayMode === 'grid') {
+      widgetClasses.push('display-grid');
+      widgetClasses.push(`cols-${config.columns || '2'}`);
+    } else if (config.displayMode === 'compact') {
+      widgetClasses.push('display-compact');
+    }
+
+    // Item style classes
+    if (config.itemStyle === 'text') widgetClasses.push('item-text');
+    else if (config.itemStyle === 'minimal') widgetClasses.push('item-minimal');
+
+    // Text size
+    widgetClasses.push(`text-${config.textSize || 'medium'}`);
+
+    // Hover effect
+    if (config.hoverEffect && config.hoverEffect !== 'none') {
+      widgetClasses.push(`hover-${config.hoverEffect}`);
+    }
+
+    // Border radius
+    widgetClasses.push(`radius-${config.borderRadius || 'small'}`);
+
+    // Container style
+    if (config.containerStyle === 'transparent') widgetClasses.push('container-transparent');
+    else if (config.containerStyle === 'bordered') widgetClasses.push('container-bordered');
+
+    // Build inline styles for custom colors
+    let widgetStyle = '';
+    if (config.containerBgColor) {
+      widgetStyle += `background: ${config.containerBgColor};`;
+    }
+
+    let itemStyle = '';
+    if (config.itemBgColor) {
+      itemStyle += `background: ${config.itemBgColor};`;
+    }
+    if (config.textColor) {
+      itemStyle += `color: ${config.textColor};`;
+    }
 
     const serversHtml = servers.map(server => {
       const statusKey = `widget-${widget.id}-${server.id}`;
@@ -436,17 +482,17 @@
       const lastChecked = status?.lastChecked ? new Date(status.lastChecked).toLocaleTimeString() : '';
 
       return `
-        <div class="server-item" data-status-key="${statusKey}">
+        <div class="server-item" data-status-key="${statusKey}"${itemStyle ? ` style="${itemStyle}"` : ''}>
           <span class="status-bubble ${statusClass}"></span>
           <span class="server-name">${escapeHtml(server.name || server.host)}</span>
-          <span class="server-latency">${latency}</span>
+          ${showLatency ? `<span class="server-latency">${latency}</span>` : ''}
           ${showLastChecked ? `<span class="last-checked">${lastChecked}</span>` : ''}
         </div>
       `;
     }).join('');
 
     return `
-      <div class="widget server-monitor-widget" data-widget-id="${widget.id}">
+      <div class="${widgetClasses.join(' ')}" data-widget-id="${widget.id}"${widgetStyle ? ` style="${widgetStyle}"` : ''}>
         ${widget.title ? `<div class="widget-title">${escapeHtml(widget.title)}</div>` : ''}
         <div class="server-list">
           ${serversHtml}

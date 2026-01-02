@@ -269,6 +269,11 @@
     document.getElementById('widgetType').addEventListener('change', handleWidgetTypeChange);
     document.getElementById('addServerBtn').addEventListener('click', addServerRow);
 
+    // Widget color pickers
+    setupColorPicker('serverItemBgPicker', 'serverItemBgColor');
+    setupColorPicker('serverTextColorPicker', 'serverTextColor');
+    setupColorPicker('serverContainerBgPicker', 'serverContainerBgColor');
+
     // Auth
     document.getElementById('authMode').addEventListener('change', toggleEntraSettings);
     document.getElementById('mainAuthMode').addEventListener('change', () => {
@@ -1323,7 +1328,19 @@
     switch (type) {
       case 'server-monitor':
         return {
-          servers: getServersFromModal()
+          servers: getServersFromModal(),
+          displayMode: document.getElementById('serverDisplayMode').value,
+          columns: document.getElementById('serverColumns').value,
+          itemStyle: document.getElementById('serverItemStyle').value,
+          textSize: document.getElementById('serverTextSize').value,
+          itemBgColor: document.getElementById('serverItemBgColor').value || null,
+          textColor: document.getElementById('serverTextColor').value || null,
+          hoverEffect: document.getElementById('serverHoverEffect').value,
+          borderRadius: document.getElementById('serverBorderRadius').value,
+          containerStyle: document.getElementById('serverContainerStyle').value,
+          containerBgColor: document.getElementById('serverContainerBgColor').value || null,
+          showLatency: document.getElementById('serverShowLatency').checked,
+          showLastChecked: document.getElementById('serverShowLastChecked').checked
         };
       case 'clock':
         return {
@@ -1360,6 +1377,25 @@
       case 'server-monitor':
         document.getElementById('serverMonitorList').innerHTML = '';
         (config.servers || []).forEach(server => addServerRow(server));
+        // Display options
+        setSelectValue('serverDisplayMode', config.displayMode || 'list');
+        setSelectValue('serverColumns', config.columns || '2');
+        // Item styling
+        setSelectValue('serverItemStyle', config.itemStyle || 'card');
+        setSelectValue('serverTextSize', config.textSize || 'medium');
+        document.getElementById('serverItemBgColor').value = config.itemBgColor || '';
+        document.getElementById('serverItemBgPicker').value = config.itemBgColor ? rgbaToHex(config.itemBgColor) : '#ffffff';
+        document.getElementById('serverTextColor').value = config.textColor || '';
+        document.getElementById('serverTextColorPicker').value = config.textColor ? rgbaToHex(config.textColor) : '#ffffff';
+        setSelectValue('serverHoverEffect', config.hoverEffect || 'none');
+        setSelectValue('serverBorderRadius', config.borderRadius || 'small');
+        // Container styling
+        setSelectValue('serverContainerStyle', config.containerStyle || 'card');
+        document.getElementById('serverContainerBgColor').value = config.containerBgColor || '';
+        document.getElementById('serverContainerBgPicker').value = config.containerBgColor ? rgbaToHex(config.containerBgColor) : '#ffffff';
+        // Show options
+        document.getElementById('serverShowLatency').checked = config.showLatency !== false;
+        document.getElementById('serverShowLastChecked').checked = config.showLastChecked || false;
         break;
       case 'clock':
         setSelectValue('clockFormat', config.format || '12');
@@ -1410,15 +1446,35 @@
       // Reset configs
       handleWidgetTypeChange();
       document.getElementById('serverMonitorList').innerHTML = '';
+      // Server monitor defaults
+      document.getElementById('serverDisplayMode').value = 'list';
+      document.getElementById('serverColumns').value = '2';
+      document.getElementById('serverItemStyle').value = 'card';
+      document.getElementById('serverTextSize').value = 'medium';
+      document.getElementById('serverItemBgColor').value = '';
+      document.getElementById('serverItemBgPicker').value = '#ffffff';
+      document.getElementById('serverTextColor').value = '';
+      document.getElementById('serverTextColorPicker').value = '#ffffff';
+      document.getElementById('serverHoverEffect').value = 'none';
+      document.getElementById('serverBorderRadius').value = 'small';
+      document.getElementById('serverContainerStyle').value = 'card';
+      document.getElementById('serverContainerBgColor').value = '';
+      document.getElementById('serverContainerBgPicker').value = '#ffffff';
+      document.getElementById('serverShowLatency').checked = true;
+      document.getElementById('serverShowLastChecked').checked = false;
+      // Clock defaults
       document.getElementById('clockFormat').value = '12';
       document.getElementById('clockTimezone').value = 'local';
       document.getElementById('clockShowDate').checked = true;
       document.getElementById('clockShowSeconds').checked = false;
+      // Weather defaults
       document.getElementById('weatherApiKey').value = '';
       document.getElementById('weatherLocation').value = '';
       document.getElementById('weatherUnits').value = 'imperial';
+      // Iframe defaults
       document.getElementById('iframeUrl').value = '';
       document.getElementById('iframeHeight').value = '300';
+      // Custom HTML defaults
       document.getElementById('customHtmlContent').value = '';
     }
 
