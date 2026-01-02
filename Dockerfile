@@ -2,6 +2,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Install ping utility for ICMP monitoring
+RUN apk add --no-cache iputils
+
 # Copy package files
 COPY package*.json ./
 
