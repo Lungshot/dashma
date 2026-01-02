@@ -364,6 +364,7 @@ async function registerRoutes(fastify) {
         settings: cfg.settings,
         categories: cfg.categories,
         links: cfg.links,
+        widgets: cfg.widgets || [],
         admin: {
           username: cfg.admin.username,
           mustChangePassword: cfg.admin.mustChangePassword
