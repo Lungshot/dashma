@@ -1,131 +1,116 @@
 # Dashma
 
-A minimal, zen-inspired link dashboard homepage. Fast, lightweight, and fully configurable through a web-based admin interface.
+A minimal, zen-inspired link dashboard homepage. Fast, lightweight, and fully configurable.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-## Features
+---
 
-- **Minimal Design** - Clean, distraction-free interface inspired by the Japanese concept of "Ma" (negative space)
-- **Keyboard Navigation** - Press `/` to search, `1-9` to jump to categories, arrow keys to navigate
-- **Categories & Tags** - Organize links into collapsible categories with custom tags for filtering
-- **Multiple Display Modes** - Cards or text-only links
-- **Customizable Layout** - 1-6 column layouts, responsive design
-- **Animation Options** - Multiple hover effects and nesting animations
-- **Favicon Support** - Auto-fetch favicons or use custom icons
-- **Full Admin GUI** - Configure everything through `/admin` - no file editing required
-- **Authentication Options** - No auth, basic auth, or Microsoft Entra ID (SSO)
-- **Config Backup** - Export/import configuration as JSON
-- **Docker Ready** - Simple deployment with Docker Compose
+## ✨ Features
 
-## Quick Start
+### 🎨 Beautiful & Minimal
+Dashma embraces the Japanese concept of "Ma" (間) - the beauty of negative space. A clean, distraction-free interface that lets your links breathe.
 
-### Development
+### ⌨️ Keyboard-First Navigation
+Navigate entirely with your keyboard:
+- `/` to search instantly
+- `1-9` to jump to categories
+- Arrow keys + Enter to select
 
-```bash
-cd dashma
-npm install
-npm run dev
-```
+### 🗂️ Smart Organization
+- **Categories** - Group links into collapsible sections
+- **Tags** - Add tags to links for quick filtering
+- **Multiple Views** - Display as cards or minimal text links
 
-### Docker
+### 🎛️ Fully Customizable
+- Flexible column layouts (1-6 columns)
+- Custom colors, fonts, and backgrounds
+- Hover animations and visual effects
+- Favicon support with auto-fetching
+
+### 🔐 Flexible Authentication
+- **Public** - No login required
+- **Basic Auth** - Simple username/password
+- **Microsoft Entra ID** - Enterprise SSO with guided setup wizard
+
+### 🛠️ Admin Panel
+Everything is configured through a web GUI at `/admin` - no config files to edit. Export and import your configuration as JSON for easy backup.
+
+---
+
+## 🚀 Quick Start
+
+### Using Docker (Recommended)
 
 ```bash
 docker-compose up -d --build
 ```
 
-### Docker with Nginx
+### Using Docker with Nginx
 
 ```bash
 docker-compose -f docker-compose.nginx.yml up -d --build
 ```
 
-## Access
+### Development Mode
 
-- **Homepage**: `http://localhost:3000`
-- **Admin Panel**: `http://localhost:3000/admin`
-- **Default Login**: `admin` / `admin` (password change required on first login)
+```bash
+npm install
+npm run dev
+```
 
-## Keyboard Shortcuts
+---
+
+## 🔗 Access
+
+| URL | Description |
+|-----|-------------|
+| `http://localhost:3000` | Homepage |
+| `http://localhost:3000/admin` | Admin Panel |
+
+**Default credentials:** `admin` / `admin` (password change required on first login)
+
+---
+
+## ⌨️ Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
 | `/` | Open search |
 | `Esc` | Close search/modals |
 | `1-9` | Jump to category |
-| `↑/↓` | Navigate search results |
+| `↑` `↓` | Navigate results |
 | `Enter` | Open selected link |
 
-## Configuration
+---
 
-All configuration is done through the admin panel at `/admin`:
+## 🏗️ Tech Stack
 
-### Appearance
-- Site name
-- Background color or image
-- Text and accent colors
-- Body and title fonts
+| Layer | Technology |
+|-------|------------|
+| Frontend | Vanilla HTML, CSS, JavaScript |
+| Backend | Node.js + Fastify |
+| Storage | JSON file persistence |
+| Auth | MSAL for Microsoft Entra ID |
+| Deploy | Docker + Nginx |
 
-### Layout
-- Column count (1-6)
-- Link display mode (cards/text)
-- Show/hide favicons
-- Link open behavior (new tab/same tab)
+---
 
-### Animations
-- Link hover effects: glow, fade, scale, underline, slide, border
-- Category hover effects: fade, glow, scale, color change
-- Nesting animations: slide, fade, zoom, blur
-
-### Authentication
-- **None**: Public access
-- **Basic**: Username/password
-- **Entra ID**: Microsoft SSO integration
-
-## Tech Stack
-
-- **Frontend**: Vanilla HTML, CSS, JavaScript (no frameworks)
-- **Backend**: Node.js with Fastify
-- **Data**: In-memory with JSON file persistence
-- **Auth**: Passport.js with MSAL for Entra ID
-- **Deployment**: Docker + Nginx
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | `3000` |
-| `HOST` | Server host | `0.0.0.0` |
-| `NODE_ENV` | Environment | `development` |
-| `SESSION_SECRET` | Session encryption key | (auto-generated) |
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 dashma/
 ├── src/
-│   ├── public/           # Static frontend files
-│   │   ├── css/
-│   │   ├── js/
-│   │   └── uploads/      # User uploads
-│   ├── server/           # Backend
-│   │   ├── index.js      # Server entry
-│   │   ├── config.js     # Config management
-│   │   ├── auth.js       # Authentication
-│   │   └── routes.js     # API routes
-│   └── data/
-│       └── config.json   # Persisted config
-├── Dockerfile
+│   ├── public/          # Frontend (HTML, CSS, JS)
+│   ├── server/          # Backend (Fastify, routes, auth)
+│   └── data/            # Persisted configuration
 ├── docker-compose.yml
-├── docker-compose.nginx.yml
-├── nginx.conf
-└── package.json
+└── nginx.conf
 ```
 
-## License
+---
+
+## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
