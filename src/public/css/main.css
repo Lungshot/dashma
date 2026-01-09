@@ -1311,6 +1311,25 @@ body {
 .widget.widget-align-center { margin-left: auto; margin-right: auto; }
 .widget.widget-align-right { margin-left: auto; }
 
+/* For full-width widgets, alignment controls content inside */
+.widget.width-full.widget-align-left { text-align: left; justify-content: flex-start; }
+.widget.width-full.widget-align-center { text-align: center; justify-content: center; }
+.widget.width-full.widget-align-right { text-align: right; justify-content: flex-end; }
+
+/* Server monitor widget content alignment */
+.server-monitor-widget.widget-align-center .server-list {
+  align-items: center;
+}
+.server-monitor-widget.widget-align-center .server-item {
+  justify-content: center;
+}
+.server-monitor-widget.widget-align-left .server-list {
+  align-items: flex-start;
+}
+.server-monitor-widget.widget-align-right .server-list {
+  align-items: flex-end;
+}
+
 /* Position Container - Header */
 .widgets-header {
   position: fixed;

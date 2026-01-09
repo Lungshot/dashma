@@ -485,6 +485,15 @@
     if (config.containerStyle === 'transparent') widgetClasses.push('container-transparent');
     else if (config.containerStyle === 'bordered') widgetClasses.push('container-bordered');
 
+    // Widget width
+    const widgetWidth = widget.width || 'full';
+    widgetClasses.push(`width-${widgetWidth}`);
+
+    // Widget alignment
+    if (widget.alignment) {
+      widgetClasses.push(`widget-align-${widget.alignment}`);
+    }
+
     // Build inline styles for custom colors
     let widgetStyle = '';
     if (config.containerBgColor) {
@@ -584,13 +593,12 @@
     }
 
     // Widget width
-    if (widget.width && widget.width !== 'full') {
-      classes.push(`width-${widget.width}`);
-    }
+    const widgetWidth = widget.width || 'full';
+    classes.push(`width-${widgetWidth}`);
 
     // Widget alignment (horizontal position)
-    if (widget.alignment && widget.alignment !== 'center') {
-      classes.push(`align-${widget.alignment}`);
+    if (widget.alignment) {
+      classes.push(`widget-align-${widget.alignment}`);
     }
 
     // Build inline styles for custom colors
@@ -732,9 +740,12 @@
   // Weather Widget
   function renderWeatherWidget(widget) {
     const config = widget.config || {};
-    // Weather will be fetched and updated separately
+    const classes = ['widget', 'weather-widget'];
+    classes.push(`width-${widget.width || 'full'}`);
+    if (widget.alignment) classes.push(`widget-align-${widget.alignment}`);
+
     return `
-      <div class="widget weather-widget" data-widget-id="${widget.id}" data-api-key="${config.apiKey || ''}" data-location="${config.location || ''}" data-units="${config.units || 'imperial'}">
+      <div class="${classes.join(' ')}" data-widget-id="${widget.id}" data-api-key="${config.apiKey || ''}" data-location="${config.location || ''}" data-units="${config.units || 'imperial'}">
         ${widget.title ? `<div class="widget-title">${escapeHtml(widget.title)}</div>` : ''}
         <div class="temperature">--°</div>
         <div class="condition">Loading...</div>
@@ -748,9 +759,12 @@
     const config = widget.config || {};
     const height = config.height || '300px';
     const sandbox = config.sandbox || 'allow-scripts allow-same-origin';
+    const classes = ['widget', 'iframe-widget'];
+    classes.push(`width-${widget.width || 'full'}`);
+    if (widget.alignment) classes.push(`widget-align-${widget.alignment}`);
 
     return `
-      <div class="widget iframe-widget" data-widget-id="${widget.id}">
+      <div class="${classes.join(' ')}" data-widget-id="${widget.id}">
         ${widget.title ? `<div class="widget-title">${escapeHtml(widget.title)}</div>` : ''}
         <iframe src="${escapeHtml(config.url || '')}" style="height: ${height};" sandbox="${sandbox}" ${config.allowFullscreen ? 'allowfullscreen' : ''}></iframe>
       </div>
@@ -761,9 +775,12 @@
   function renderCustomHtmlWidget(widget) {
     const config = widget.config || {};
     const customCss = config.css ? `<style>${config.css}</style>` : '';
+    const classes = ['widget', 'custom-html-widget'];
+    classes.push(`width-${widget.width || 'full'}`);
+    if (widget.alignment) classes.push(`widget-align-${widget.alignment}`);
 
     return `
-      <div class="widget custom-html-widget" data-widget-id="${widget.id}">
+      <div class="${classes.join(' ')}" data-widget-id="${widget.id}">
         ${widget.title ? `<div class="widget-title">${escapeHtml(widget.title)}</div>` : ''}
         ${customCss}
         <div class="custom-content">${config.html || ''}</div>
