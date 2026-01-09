@@ -16,9 +16,14 @@
       const response = await fetch('/api/public/data');
       appData = await response.json();
       applySettings();
+      // Render widgets in all positions
+      renderWidgets('header');
+      renderWidgets('left-sidebar');
+      renderWidgets('right-sidebar');
       renderWidgets('above-categories');
       renderCategories();
       renderWidgets('below-categories');
+      renderWidgets('footer');
       setupEventListeners();
       // Start monitoring polling
       startMonitoringPolling();
@@ -376,21 +381,34 @@
 
   // Render widgets for a position
   function renderWidgets(position) {
-    const containerId = position === 'above-categories' ? 'widgetsAbove' : 'widgetsBelow';
+    // Map position to container ID
+    const containerIdMap = {
+      'header': 'widgetsHeader',
+      'above-categories': 'widgetsAbove',
+      'below-categories': 'widgetsBelow',
+      'footer': 'widgetsFooter',
+      'left-sidebar': 'widgetsSidebarLeft',
+      'right-sidebar': 'widgetsSidebarRight'
+    };
+
+    const containerId = containerIdMap[position];
+    if (!containerId) return;
+
     let container = document.getElementById(containerId);
 
     if (!container) {
       // Create container if it doesn't exist
       container = document.createElement('div');
       container.id = containerId;
-      container.className = `widgets-container ${position === 'below-categories' ? 'position-below' : ''}`;
+      container.className = `widgets-container widgets-${position.replace('-', '-')}`;
 
       const grid = document.querySelector('.categories-grid');
       if (position === 'above-categories') {
         grid.parentNode.insertBefore(container, grid);
-      } else {
+      } else if (position === 'below-categories') {
         grid.parentNode.insertBefore(container, grid.nextSibling);
       }
+      // Other positions should already exist in HTML
     }
 
     const widgets = (appData.widgets || [])
@@ -398,6 +416,13 @@
       .sort((a, b) => a.order - b.order);
 
     container.innerHTML = widgets.map(widget => renderWidget(widget)).join('');
+
+    // Show/hide container based on whether it has widgets
+    if (widgets.length === 0) {
+      container.style.display = 'none';
+    } else {
+      container.style.display = '';
+    }
 
     // Initialize clock widgets
     initClockWidgets();
@@ -504,8 +529,86 @@
   // Clock Widget
   function renderClockWidget(widget) {
     const config = widget.config || {};
+
+    // Build CSS classes array
+    const classes = ['widget', 'clock-widget'];
+
+    // Size preset
+    if (config.size && config.size !== 'medium') {
+      classes.push(`size-${config.size}`);
+    }
+
+    // Font family
+    if (config.fontFamily && config.fontFamily !== 'theme') {
+      classes.push(`font-${config.fontFamily}`);
+    }
+
+    // Font weight
+    if (config.fontWeight && config.fontWeight !== 'normal') {
+      classes.push(`weight-${config.fontWeight}`);
+    }
+
+    // Container style
+    if (config.containerStyle && config.containerStyle !== 'card') {
+      classes.push(`container-${config.containerStyle}`);
+    }
+
+    // Border radius
+    if (config.borderRadius && config.borderRadius !== 'medium') {
+      classes.push(`radius-${config.borderRadius}`);
+    }
+
+    // Text shadow
+    if (config.textShadow && config.textShadow !== 'none') {
+      classes.push(`shadow-${config.textShadow}`);
+    }
+
+    // Text gradient
+    if (config.textGradient && config.textGradient !== 'none') {
+      classes.push(`gradient-${config.textGradient}`);
+    }
+
+    // Hover effect
+    if (config.hoverEffect && config.hoverEffect !== 'none') {
+      classes.push(`hover-${config.hoverEffect}`);
+    }
+
+    // Animation
+    if (config.animation && config.animation !== 'none') {
+      classes.push(`anim-${config.animation}`);
+    }
+
+    // Text alignment within widget
+    if (config.alignment && config.alignment !== 'center') {
+      classes.push(`text-${config.alignment}`);
+    }
+
+    // Widget width
+    if (widget.width && widget.width !== 'full') {
+      classes.push(`width-${widget.width}`);
+    }
+
+    // Widget alignment (horizontal position)
+    if (widget.alignment && widget.alignment !== 'center') {
+      classes.push(`align-${widget.alignment}`);
+    }
+
+    // Build inline styles for custom colors
+    const styles = [];
+    if (config.textColor) {
+      styles.push(`--clock-text-color: ${config.textColor}`);
+    }
+    if (config.dateColor) {
+      styles.push(`--clock-date-color: ${config.dateColor}`);
+    }
+    if (config.bgColor) {
+      styles.push(`background-color: ${config.bgColor}`);
+    }
+
+    const styleAttr = styles.length > 0 ? ` style="${styles.join('; ')}"` : '';
+
     return `
-      <div class="widget clock-widget" data-widget-id="${widget.id}" data-timezone="${config.timezone || ''}" data-format="${config.format || '12h'}" data-show-date="${config.showDate !== false}" data-show-seconds="${config.showSeconds || false}">
+      <div class="${classes.join(' ')}" data-widget-id="${widget.id}" data-timezone="${config.timezone || ''}" data-format="${config.format || '12h'}" data-show-date="${config.showDate !== false}" data-show-seconds="${config.showSeconds || false}"${styleAttr}>
         ${widget.title ? `<div class="widget-title">${escapeHtml(widget.title)}</div>` : ''}
         <div class="time"></div>
         ${config.showDate !== false ? '<div class="date"></div>' : ''}

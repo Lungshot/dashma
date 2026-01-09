@@ -869,6 +869,30 @@
             <select class="form-select" id="widgetPosition">
               <option value="above-categories">Above Categories</option>
               <option value="below-categories">Below Categories</option>
+              <option value="header">Header (Fixed Top)</option>
+              <option value="footer">Footer</option>
+              <option value="left-sidebar">Left Sidebar</option>
+              <option value="right-sidebar">Right Sidebar</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Width</label>
+            <select class="form-select" id="widgetWidth">
+              <option value="full">Full Width</option>
+              <option value="half">Half (50%)</option>
+              <option value="third">Third (33%)</option>
+              <option value="quarter">Quarter (25%)</option>
+              <option value="auto">Auto (Content)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Alignment</label>
+            <select class="form-select" id="widgetAlignment">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
             </select>
           </div>
         </div>
@@ -1043,6 +1067,142 @@
               <input type="checkbox" id="clockShowSeconds">
               <span>Show Seconds</span>
             </label>
+          </div>
+
+          <h4 class="card-title" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">Size & Typography</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Size</label>
+              <select class="form-select" id="clockSize">
+                <option value="small">Small</option>
+                <option value="medium" selected>Medium</option>
+                <option value="large">Large</option>
+                <option value="xlarge">Extra Large</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Font Family</label>
+              <select class="form-select" id="clockFontFamily">
+                <option value="theme">Theme Default</option>
+                <option value="system">System UI</option>
+                <option value="monospace">Monospace</option>
+                <option value="serif">Serif</option>
+                <option value="elegant">Elegant</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Font Weight</label>
+              <select class="form-select" id="clockFontWeight">
+                <option value="light">Light</option>
+                <option value="normal" selected>Normal</option>
+                <option value="bold">Bold</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Text Alignment</label>
+              <select class="form-select" id="clockTextAlignment">
+                <option value="left">Left</option>
+                <option value="center" selected>Center</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+          </div>
+
+          <h4 class="card-title" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">Colors</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Time Color</label>
+              <div class="color-picker-wrapper">
+                <input type="color" class="color-picker" id="clockTextColorPicker" value="#ffffff">
+                <input type="text" class="form-input color-value" id="clockTextColor" value="" placeholder="Use theme default">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date Color</label>
+              <div class="color-picker-wrapper">
+                <input type="color" class="color-picker" id="clockDateColorPicker" value="#888888">
+                <input type="text" class="form-input color-value" id="clockDateColor" value="" placeholder="Use accent color">
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Background Color</label>
+            <div class="color-picker-wrapper">
+              <input type="color" class="color-picker" id="clockBgColorPicker" value="#333333">
+              <input type="text" class="form-input color-value" id="clockBgColor" value="" placeholder="Use theme default">
+            </div>
+          </div>
+
+          <h4 class="card-title" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">Effects</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Text Shadow</label>
+              <select class="form-select" id="clockTextShadow">
+                <option value="none">None</option>
+                <option value="subtle">Subtle</option>
+                <option value="glow">Glow</option>
+                <option value="strong">Strong</option>
+                <option value="neon">Neon</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Text Gradient</label>
+              <select class="form-select" id="clockTextGradient">
+                <option value="none">None</option>
+                <option value="sunset">Sunset</option>
+                <option value="ocean">Ocean</option>
+                <option value="fire">Fire</option>
+                <option value="purple">Purple</option>
+                <option value="mint">Mint</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Hover Effect</label>
+              <select class="form-select" id="clockHoverEffect">
+                <option value="none">None</option>
+                <option value="glow">Glow</option>
+                <option value="scale">Scale</option>
+                <option value="fade">Fade</option>
+                <option value="pulse">Pulse</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Animation</label>
+              <select class="form-select" id="clockAnimation">
+                <option value="none">None</option>
+                <option value="fade-in">Fade In</option>
+                <option value="slide-up">Slide Up</option>
+                <option value="pulse">Pulse</option>
+                <option value="breathe">Breathe</option>
+              </select>
+            </div>
+          </div>
+
+          <h4 class="card-title" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">Container</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Container Style</label>
+              <select class="form-select" id="clockContainerStyle">
+                <option value="card">Card (with background)</option>
+                <option value="transparent">Transparent</option>
+                <option value="bordered">Border Only</option>
+                <option value="glass">Glass Effect</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Border Radius</label>
+              <select class="form-select" id="clockBorderRadius">
+                <option value="none">None (square)</option>
+                <option value="small">Small (4px)</option>
+                <option value="medium" selected>Medium (12px)</option>
+                <option value="large">Large (20px)</option>
+                <option value="pill">Pill (50px)</option>
+              </select>
+            </div>
           </div>
         </div>
 

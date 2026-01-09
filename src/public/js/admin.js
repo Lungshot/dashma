@@ -292,10 +292,14 @@
     document.getElementById('widgetType').addEventListener('change', handleWidgetTypeChange);
     document.getElementById('addServerBtn').addEventListener('click', addServerRow);
 
-    // Widget color pickers
+    // Widget color pickers - Server Monitor
     setupColorPicker('serverItemBgPicker', 'serverItemBgColor');
     setupColorPicker('serverTextColorPicker', 'serverTextColor');
     setupColorPicker('serverContainerBgPicker', 'serverContainerBgColor');
+    // Widget color pickers - Clock
+    setupColorPicker('clockTextColorPicker', 'clockTextColor');
+    setupColorPicker('clockDateColorPicker', 'clockDateColor');
+    setupColorPicker('clockBgColorPicker', 'clockBgColor');
 
     // Auth
     document.getElementById('authMode').addEventListener('change', toggleEntraSettings);
@@ -1372,7 +1376,24 @@
           format: document.getElementById('clockFormat').value,
           timezone: document.getElementById('clockTimezone').value,
           showDate: document.getElementById('clockShowDate').checked,
-          showSeconds: document.getElementById('clockShowSeconds').checked
+          showSeconds: document.getElementById('clockShowSeconds').checked,
+          // Size & Typography
+          size: document.getElementById('clockSize').value,
+          fontFamily: document.getElementById('clockFontFamily').value,
+          fontWeight: document.getElementById('clockFontWeight').value,
+          textAlignment: document.getElementById('clockTextAlignment').value,
+          // Colors
+          textColor: document.getElementById('clockTextColor').value || null,
+          dateColor: document.getElementById('clockDateColor').value || null,
+          bgColor: document.getElementById('clockBgColor').value || null,
+          // Effects
+          textShadow: document.getElementById('clockTextShadow').value,
+          textGradient: document.getElementById('clockTextGradient').value,
+          hoverEffect: document.getElementById('clockHoverEffect').value,
+          animation: document.getElementById('clockAnimation').value,
+          // Container
+          containerStyle: document.getElementById('clockContainerStyle').value,
+          borderRadius: document.getElementById('clockBorderRadius').value
         };
       case 'weather':
         return {
@@ -1427,6 +1448,26 @@
         setSelectValue('clockTimezone', config.timezone || 'local');
         document.getElementById('clockShowDate').checked = config.showDate !== false;
         document.getElementById('clockShowSeconds').checked = config.showSeconds || false;
+        // Size & Typography
+        setSelectValue('clockSize', config.size || 'medium');
+        setSelectValue('clockFontFamily', config.fontFamily || 'theme');
+        setSelectValue('clockFontWeight', config.fontWeight || 'normal');
+        setSelectValue('clockTextAlignment', config.textAlignment || 'center');
+        // Colors
+        document.getElementById('clockTextColor').value = config.textColor || '';
+        document.getElementById('clockTextColorPicker').value = config.textColor ? rgbaToHex(config.textColor) : '#ffffff';
+        document.getElementById('clockDateColor').value = config.dateColor || '';
+        document.getElementById('clockDateColorPicker').value = config.dateColor ? rgbaToHex(config.dateColor) : '#888888';
+        document.getElementById('clockBgColor').value = config.bgColor || '';
+        document.getElementById('clockBgColorPicker').value = config.bgColor ? rgbaToHex(config.bgColor) : '#333333';
+        // Effects
+        setSelectValue('clockTextShadow', config.textShadow || 'none');
+        setSelectValue('clockTextGradient', config.textGradient || 'none');
+        setSelectValue('clockHoverEffect', config.hoverEffect || 'none');
+        setSelectValue('clockAnimation', config.animation || 'none');
+        // Container
+        setSelectValue('clockContainerStyle', config.containerStyle || 'card');
+        setSelectValue('clockBorderRadius', config.borderRadius || 'medium');
         break;
       case 'weather':
         document.getElementById('weatherApiKey').value = config.apiKey || '';
@@ -1454,6 +1495,8 @@
       document.getElementById('widgetId').value = widgetId;
       document.getElementById('widgetType').value = widget?.type || 'server-monitor';
       document.getElementById('widgetPosition').value = widget?.position || 'above-categories';
+      document.getElementById('widgetWidth').value = widget?.width || 'full';
+      document.getElementById('widgetAlignment').value = widget?.alignment || 'left';
       document.getElementById('widgetTitle').value = widget?.title || '';
       document.getElementById('widgetEnabled').checked = widget?.enabled !== false;
 
@@ -1465,6 +1508,8 @@
       document.getElementById('widgetId').value = '';
       document.getElementById('widgetType').value = 'server-monitor';
       document.getElementById('widgetPosition').value = 'above-categories';
+      document.getElementById('widgetWidth').value = 'full';
+      document.getElementById('widgetAlignment').value = 'left';
       document.getElementById('widgetTitle').value = '';
       document.getElementById('widgetEnabled').checked = true;
 
@@ -1492,6 +1537,26 @@
       document.getElementById('clockTimezone').value = 'local';
       document.getElementById('clockShowDate').checked = true;
       document.getElementById('clockShowSeconds').checked = false;
+      // Clock size & typography defaults
+      document.getElementById('clockSize').value = 'medium';
+      document.getElementById('clockFontFamily').value = 'theme';
+      document.getElementById('clockFontWeight').value = 'normal';
+      document.getElementById('clockTextAlignment').value = 'center';
+      // Clock color defaults
+      document.getElementById('clockTextColor').value = '';
+      document.getElementById('clockTextColorPicker').value = '#ffffff';
+      document.getElementById('clockDateColor').value = '';
+      document.getElementById('clockDateColorPicker').value = '#888888';
+      document.getElementById('clockBgColor').value = '';
+      document.getElementById('clockBgColorPicker').value = '#333333';
+      // Clock effect defaults
+      document.getElementById('clockTextShadow').value = 'none';
+      document.getElementById('clockTextGradient').value = 'none';
+      document.getElementById('clockHoverEffect').value = 'none';
+      document.getElementById('clockAnimation').value = 'none';
+      // Clock container defaults
+      document.getElementById('clockContainerStyle').value = 'card';
+      document.getElementById('clockBorderRadius').value = 'medium';
       // Weather defaults
       document.getElementById('weatherApiKey').value = '';
       document.getElementById('weatherLocation').value = '';
@@ -1515,6 +1580,8 @@
     const id = document.getElementById('widgetId').value;
     const type = document.getElementById('widgetType').value;
     const position = document.getElementById('widgetPosition').value;
+    const width = document.getElementById('widgetWidth').value;
+    const alignment = document.getElementById('widgetAlignment').value;
     const widgetTitle = document.getElementById('widgetTitle').value.trim();
     const enabled = document.getElementById('widgetEnabled').checked;
     const config = getWidgetConfig(type);
@@ -1522,6 +1589,8 @@
     const widgetData = {
       type,
       position,
+      width,
+      alignment,
       title: widgetTitle || null,
       enabled,
       config

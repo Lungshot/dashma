@@ -1104,9 +1104,130 @@ body {
 }
 
 .clock-widget .date {
-  color: var(--accent-color);
+  color: var(--clock-date-color, var(--accent-color));
   font-size: 1rem;
   margin-top: 10px;
+}
+
+/* Clock Widget - Custom text color */
+.clock-widget .time {
+  color: var(--clock-text-color, inherit);
+}
+
+/* Clock Widget - Size Presets */
+.clock-widget.size-small .time { font-size: 1.5rem; }
+.clock-widget.size-small .date { font-size: 0.75rem; }
+.clock-widget.size-medium .time { font-size: 3rem; }
+.clock-widget.size-medium .date { font-size: 1rem; }
+.clock-widget.size-large .time { font-size: 4.5rem; }
+.clock-widget.size-large .date { font-size: 1.25rem; }
+.clock-widget.size-xlarge .time { font-size: 6rem; }
+.clock-widget.size-xlarge .date { font-size: 1.5rem; }
+
+/* Clock Widget - Font Families */
+.clock-widget.font-system .time { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+.clock-widget.font-monospace .time { font-family: 'Courier New', Consolas, 'Liberation Mono', monospace; }
+.clock-widget.font-serif .time { font-family: Georgia, 'Times New Roman', Times, serif; }
+.clock-widget.font-elegant .time { font-family: 'Playfair Display', Didot, Georgia, serif; }
+.clock-widget.font-theme .time { font-family: var(--font-family); }
+
+/* Clock Widget - Font Weights */
+.clock-widget.weight-light .time { font-weight: 200; }
+.clock-widget.weight-normal .time { font-weight: 400; }
+.clock-widget.weight-bold .time { font-weight: 700; }
+
+/* Clock Widget - Text Shadows */
+.clock-widget.shadow-subtle .time { text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.clock-widget.shadow-glow .time { text-shadow: 0 0 20px currentColor; }
+.clock-widget.shadow-strong .time { text-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+.clock-widget.shadow-neon .time {
+  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 40px currentColor;
+}
+
+/* Clock Widget - Text Gradients */
+.clock-widget.gradient-sunset .time {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.clock-widget.gradient-ocean .time {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.clock-widget.gradient-fire .time {
+  background: linear-gradient(135deg, #f12711, #f5af19);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.clock-widget.gradient-purple .time {
+  background: linear-gradient(135deg, #a18cd1, #fbc2eb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.clock-widget.gradient-mint .time {
+  background: linear-gradient(135deg, #11998e, #38ef7d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Clock Widget - Hover Effects */
+.clock-widget.hover-glow { transition: box-shadow 0.3s ease; }
+.clock-widget.hover-glow:hover { box-shadow: 0 0 30px rgba(255,255,255,0.2); }
+
+.clock-widget.hover-scale { transition: transform 0.3s ease; }
+.clock-widget.hover-scale:hover { transform: scale(1.02); }
+
+.clock-widget.hover-fade { transition: opacity 0.3s ease; }
+.clock-widget.hover-fade:hover { opacity: 0.8; }
+
+.clock-widget.hover-pulse:hover .time { animation: clock-pulse 1s infinite; }
+
+/* Clock Widget - Animations */
+@keyframes clock-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes clock-slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes clock-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+@keyframes clock-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+.clock-widget.anim-fade-in { animation: clock-fade-in 0.5s ease-out; }
+.clock-widget.anim-slide-up { animation: clock-slide-up 0.5s ease-out; }
+.clock-widget.anim-pulse .time { animation: clock-pulse 2s infinite; }
+.clock-widget.anim-breathe { animation: clock-breathe 4s infinite ease-in-out; }
+
+/* Clock Widget - Text Alignment */
+.clock-widget.text-left { text-align: left; }
+.clock-widget.text-center { text-align: center; }
+.clock-widget.text-right { text-align: right; }
+
+/* Clock Widget - Border Radius */
+.clock-widget.radius-none { border-radius: 0; }
+.clock-widget.radius-small { border-radius: 4px; }
+.clock-widget.radius-medium { border-radius: 12px; }
+.clock-widget.radius-large { border-radius: 20px; }
+.clock-widget.radius-pill { border-radius: 50px; }
+
+/* Widget - Container Styles (shared) */
+.widget.container-card {
+  background: var(--category-bg-color, rgba(255,255,255,0.03));
+}
+.widget.container-transparent {
+  background: transparent;
+  padding: 20px 0;
+}
+.widget.container-bordered {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.widget.container-glass {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 /* Weather Widget */
@@ -1161,5 +1282,141 @@ body {
 
   .weather-widget .temperature {
     font-size: 2rem;
+  }
+
+  /* Clock size presets responsive */
+  .clock-widget.size-xlarge .time { font-size: 3rem; }
+  .clock-widget.size-large .time { font-size: 2.5rem; }
+}
+
+/* ===== Widget Placement System ===== */
+
+/* Widget Container - Flexbox layout for side-by-side widgets */
+.widgets-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* Widget Widths */
+.widget.width-full { width: 100%; flex: 0 0 100%; }
+.widget.width-half { width: calc(50% - 10px); flex: 0 0 calc(50% - 10px); }
+.widget.width-third { width: calc(33.333% - 14px); flex: 0 0 calc(33.333% - 14px); }
+.widget.width-quarter { width: calc(25% - 15px); flex: 0 0 calc(25% - 15px); }
+.widget.width-auto { width: auto; flex: 0 0 auto; }
+
+/* Widget Alignment within container */
+.widget.widget-align-left { margin-right: auto; }
+.widget.widget-align-center { margin-left: auto; margin-right: auto; }
+.widget.widget-align-right { margin-left: auto; }
+
+/* Position Container - Header */
+.widgets-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 15px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.widgets-header .widget {
+  margin-bottom: 0;
+  background: transparent;
+}
+
+/* Offset body when header widgets present */
+body.has-header-widgets {
+  padding-top: 80px;
+}
+
+/* Position Container - Footer */
+.widgets-footer {
+  margin-top: 40px;
+  padding: 20px 0;
+}
+
+/* Position Container - Left Sidebar */
+.widgets-sidebar-left {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 220px;
+  max-width: 25vw;
+  padding: 20px;
+  z-index: 50;
+  flex-direction: column;
+}
+
+.widgets-sidebar-left .widget {
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+/* Position Container - Right Sidebar */
+.widgets-sidebar-right {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 220px;
+  max-width: 25vw;
+  padding: 20px;
+  z-index: 50;
+  flex-direction: column;
+}
+
+.widgets-sidebar-right .widget {
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+/* Offset main content when sidebars present */
+body.has-left-sidebar .container {
+  margin-left: 240px;
+}
+
+body.has-right-sidebar .container {
+  margin-right: 240px;
+}
+
+/* Widget width responsive */
+@media (max-width: 900px) {
+  .widget.width-quarter { width: calc(50% - 10px); flex: 0 0 calc(50% - 10px); }
+  .widget.width-third { width: calc(50% - 10px); flex: 0 0 calc(50% - 10px); }
+
+  /* Hide sidebars on medium screens */
+  .widgets-sidebar-left,
+  .widgets-sidebar-right {
+    display: none;
+  }
+
+  body.has-left-sidebar .container,
+  body.has-right-sidebar .container {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .widget.width-half,
+  .widget.width-third,
+  .widget.width-quarter {
+    width: 100%;
+    flex: 0 0 100%;
+  }
+
+  .widgets-header {
+    position: relative;
+    padding: 10px;
+  }
+
+  body.has-header-widgets {
+    padding-top: 20px;
   }
 }
