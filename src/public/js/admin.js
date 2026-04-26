@@ -1,4 +1,4 @@
-// Dashma Admin JavaScript
+// InventorDash Admin JavaScript
 (function() {
   'use strict';
 
@@ -527,7 +527,7 @@
     const s = appConfig.settings;
 
     // Site Title
-    document.getElementById('siteName').value = s.siteName || 'Dashma';
+    document.getElementById('siteName').value = s.siteName || 'InventorDash';
     setSelectValue('titleSize', s.titleSize || 'large');
     setSelectValue('titleAlignment', s.titleAlignment || 'center');
     setSelectValue('titleHoverEffect', s.titleHoverEffect || 'none');
@@ -2076,7 +2076,7 @@
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'dashma-config.json';
+      a.download = 'inventordash-config.json';
       a.click();
       window.URL.revokeObjectURL(url);
       showToast('Config exported');

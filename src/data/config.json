@@ -1,12 +1,12 @@
 {
   "settings": {
-    "siteName": "Dashma",
-    "backgroundColor": "#212121",
+    "siteName": "InventorDash",
+    "backgroundColor": "#141923",
     "backgroundImage": null,
     "fontFamily": "'Courier New', Courier, monospace",
     "titleFontFamily": "'Courier New', Courier, monospace",
-    "textColor": "#ffffff",
-    "accentColor": "#888888",
+    "textColor": "#f6f0eb",
+    "accentColor": "#ff7f6b",
     "linkDisplayMode": "cards",
     "columns": 3,
     "linkOpenBehavior": "newTab",
@@ -20,12 +20,38 @@
       "tenantId": "",
       "clientSecret": "",
       "redirectUri": ""
-    }
+    },
+    "titleSize": "large",
+    "titleAlignment": "center",
+    "titleHoverEffect": "none",
+    "titleLinkUrl": null,
+    "showTitle": true,
+    "showLogo": true,
+    "siteLogoMode": "none",
+    "logoSize": "medium",
+    "logoPosition": "above",
+    "logoAlignment": "center",
+    "colorTheme": "coralNight",
+    "categoryBgColor": "rgba(255,255,255,0.035)",
+    "categoryTitleColor": "#ffd0c7",
+    "linkCardBgColor": "rgba(255,255,255,0.06)",
+    "tagBgColor": "rgba(255,127,107,0.18)",
+    "showCategoryBackground": true,
+    "categoryHeadingSize": "medium",
+    "showCategoryArrow": true,
+    "showFooter": false,
+    "footerText": "",
+    "footerSize": "small",
+    "footerAlignment": "center",
+    "footerHoverEffect": "none",
+    "showRequestLink": false,
+    "requestLinkText": "Request Link Addition",
+    "requestLinkUrl": "/request"
   },
   "admin": {
     "username": "admin",
-    "passwordHash": "$2a$10$bBk4eiHGcxYofAPmfRKtn.2nAScdd81ZqSknAxuS/dV9hDtelwUNu",
-    "mustChangePassword": true
+    "passwordHash": "$2a$10$UkVy15HrujRNWwM0FPpBMOgt9JtUGFy.99fjbw7DPAaWJ1fa/M6aW",
+    "mustChangePassword": false
   },
   "categories": [
     {
@@ -42,6 +68,11 @@
       "id": "cat-3",
       "name": "Development",
       "order": 2
+    },
+    {
+      "id": "21ee2509-3859-4860-afb0-91adf5654ce6",
+      "name": "test",
+      "order": 3
     }
   ],
   "links": [
@@ -50,7 +81,10 @@
       "name": "GitHub",
       "url": "https://github.com",
       "categoryId": "cat-3",
-      "tags": ["code", "git"],
+      "tags": [
+        "code",
+        "git"
+      ],
       "icon": null,
       "customIcon": null,
       "openBehavior": null,
@@ -61,7 +95,10 @@
       "name": "Stack Overflow",
       "url": "https://stackoverflow.com",
       "categoryId": "cat-3",
-      "tags": ["code", "help"],
+      "tags": [
+        "code",
+        "help"
+      ],
       "icon": null,
       "customIcon": null,
       "openBehavior": null,
@@ -72,7 +109,9 @@
       "name": "Twitter",
       "url": "https://twitter.com",
       "categoryId": "cat-1",
-      "tags": ["social"],
+      "tags": [
+        "social"
+      ],
       "icon": null,
       "customIcon": null,
       "openBehavior": null,
@@ -83,7 +122,10 @@
       "name": "Reddit",
       "url": "https://reddit.com",
       "categoryId": "cat-1",
-      "tags": ["social", "news"],
+      "tags": [
+        "social",
+        "news"
+      ],
       "icon": null,
       "customIcon": null,
       "openBehavior": null,
@@ -94,7 +136,10 @@
       "name": "Google Drive",
       "url": "https://drive.google.com",
       "categoryId": "cat-2",
-      "tags": ["storage", "docs"],
+      "tags": [
+        "storage",
+        "docs"
+      ],
       "icon": null,
       "customIcon": null,
       "openBehavior": null,
@@ -105,11 +150,107 @@
       "name": "Notion",
       "url": "https://notion.so",
       "categoryId": "cat-2",
-      "tags": ["notes", "docs"],
+      "tags": [
+        "notes",
+        "docs"
+      ],
       "icon": null,
       "customIcon": null,
       "openBehavior": null,
       "order": 1
     }
-  ]
+  ],
+  "tabs": [
+    {
+      "id": "702af895-67b8-4389-ab45-a45c750d540d",
+      "name": "Ejemplo1",
+      "categoryIds": [
+        "21ee2509-3859-4860-afb0-91adf5654ce6"
+      ],
+      "order": 0
+    },
+    {
+      "id": "tab-1",
+      "name": "Main",
+      "categoryIds": [
+        "cat-1",
+        "cat-2"
+      ],
+      "order": 1
+    },
+    {
+      "id": "3b7b7337-a8f1-4125-afe2-e4008387cd79",
+      "name": "Ejemplo2",
+      "categoryIds": [
+        "21ee2509-3859-4860-afb0-91adf5654ce6"
+      ],
+      "order": 2
+    },
+    {
+      "id": "9aab9788-10d8-44de-be7c-5aa8538be089",
+      "name": "Proxmox",
+      "categoryIds": [],
+      "order": 3
+    },
+    {
+      "id": "tab-2",
+      "name": "Tech",
+      "categoryIds": [
+        "cat-3"
+      ],
+      "order": 4
+    }
+  ],
+  "widgets": [
+    {
+      "id": "458b2f18-3b20-4c7f-a840-10ddfeb3c2b9",
+      "type": "mqtt",
+      "enabled": true,
+      "position": "above-categories",
+      "order": 0,
+      "title": null,
+      "config": {
+        "protocol": "ws",
+        "host": "192.168.1.10",
+        "port": 8083,
+        "path": "/mqtt",
+        "clientId": "testidsdadas",
+        "username": "user",
+        "password": "user",
+        "topic": "/test/",
+        "qos": 0,
+        "payloadView": "auto"
+      },
+      "width": "full",
+      "alignment": "left"
+    },
+    {
+      "id": "a60ac8c9-1bb1-4632-8ac0-fb15be64bd04",
+      "type": "server-monitor",
+      "enabled": true,
+      "position": "above-categories",
+      "order": 1,
+      "title": "prueba http",
+      "config": {
+        "servers": [],
+        "displayMode": "list",
+        "columns": "2",
+        "itemStyle": "card",
+        "textSize": "medium",
+        "itemBgColor": null,
+        "textColor": null,
+        "hoverEffect": "none",
+        "borderRadius": "small",
+        "containerStyle": "card",
+        "containerBgColor": null,
+        "showLatency": true,
+        "showLastChecked": false
+      }
+    }
+  ],
+  "users": [],
+  "requests": {
+    "categories": [],
+    "links": []
+  }
 }

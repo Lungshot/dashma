@@ -1,7 +1,7 @@
 services:
-  dashma:
+  inventordash:
     build: .
-    container_name: dashma
+    container_name: inventordash
     restart: unless-stopped
     # Required for ICMP ping monitoring
     cap_add:
@@ -11,17 +11,18 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - HOST=0.0.0.0
       # COOKIE_SECURE: Set to 'true' only if NOT behind a reverse proxy (direct HTTPS)
       # Leave unset or 'false' when behind Caddy/nginx/Traefik that handles SSL
       # - COOKIE_SECURE=true
       # Optional: Set a custom session secret for enhanced security
       # In Portainer, add this as an environment variable:
       # SESSION_SECRET=your-secure-random-string-minimum-32-characters
-      # - SESSION_SECRET=${SESSION_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET:-change-this-session-secret-in-production}
     volumes:
-      - dashma_data:/app/src/data
-      - dashma_uploads:/app/src/public/uploads
+      - inventordash_data:/app/src/data
+      - inventordash_uploads:/app/src/public/uploads
 
 volumes:
-  dashma_data:
-  dashma_uploads:
+  inventordash_data:
+  inventordash_uploads:

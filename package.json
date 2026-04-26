@@ -1,5 +1,5 @@
 {
-  "name": "dashma",
+  "name": "inventordash",
   "version": "1.0.0",
   "description": "A minimal, zen-inspired link dashboard homepage",
   "main": "src/server/index.js",

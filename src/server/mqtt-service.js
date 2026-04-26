@@ -100,7 +100,7 @@ function connectWidget(widget) {
     }
 
     const brokerUrl = buildBrokerUrl(cfg);
-    const clientId = cfg.clientId || `dashma-${widget.id.slice(0, 8)}`;
+    const clientId = cfg.clientId || `inventordash-${widget.id.slice(0, 8)}`;
     const options = {
       clientId,
       username: cfg.username || undefined,
@@ -234,7 +234,7 @@ function refreshWidgets() {
       existing.protocol !== (cfg.protocol || 'ws') ||
       existing.host !== (cfg.host || null) ||
       existing.port !== (cfg.port || DEFAULT_PORTS[cfg.protocol || 'ws']) ||
-      existing.clientId !== (cfg.clientId || `dashma-${widget.id.slice(0, 8)}`) ||
+      existing.clientId !== (cfg.clientId || `inventordash-${widget.id.slice(0, 8)}`) ||
       existing.username !== (cfg.username || null) ||
       existing.password !== (cfg.password || null) ||
       existing.qos !== Number(cfg.qos || 0);

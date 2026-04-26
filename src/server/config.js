@@ -7,7 +7,7 @@ const CONFIG_PATH = path.join(__dirname, '..', 'data', 'config.json');
 
 const defaultConfig = {
   settings: {
-    siteName: 'Dashma',
+    siteName: 'InventorDash',
     colorTheme: 'custom', // 'custom' means use individual color settings, otherwise theme ID
     backgroundColor: '#212121',
     backgroundImage: null,

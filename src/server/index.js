@@ -12,7 +12,7 @@ fastify.register(require('@fastify/formbody'));
 fastify.register(require('@fastify/multipart'));
 fastify.register(require('@fastify/cookie'));
 fastify.register(require('@fastify/session'), {
-  secret: process.env.SESSION_SECRET || 'dashma-secret-change-in-production-min-32-chars',
+  secret: process.env.SESSION_SECRET || 'inventordash-secret-change-in-production-min-32-chars',
   store: new FileSessionStore({
     path: path.join(__dirname, '..', 'data', 'sessions'), // Store in src/data/sessions (persisted by Docker volume)
     ttl: 86400, // 24 hours in seconds
@@ -63,7 +63,7 @@ const start = async () => {
     const port = process.env.PORT || 3000;
     const host = process.env.HOST || '0.0.0.0';
     await fastify.listen({ port, host });
-    console.log(`Dashma running at http://${host}:${port}`);
+    console.log(`InventorDash running at http://${host}:${port}`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

@@ -524,7 +524,7 @@ async function registerRoutes(fastify) {
     // Export config
     fastify.get('/api/admin/export', async (request, reply) => {
       const cfg = config.exportConfig();
-      reply.header('Content-Disposition', 'attachment; filename="dashma-config.json"');
+      reply.header('Content-Disposition', 'attachment; filename="inventordash-config.json"');
       reply.header('Content-Type', 'application/json');
       return cfg;
     });

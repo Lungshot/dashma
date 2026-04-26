@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashma Admin</title>
+  <title>InventorDash Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@300;400;500&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&family=Lato:wght@300;400;700&family=Lora:wght@400;500;600&family=Merriweather:wght@300;400;700&family=Montserrat:wght@300;400;500;600&family=Nunito:wght@300;400;500;600&family=Open+Sans:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&family=Poppins:wght@300;400;500;600&family=Roboto+Mono:wght@300;400;500&family=Roboto:wght@300;400;500;700&family=Source+Sans+Pro:wght@300;400;600&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h1 class="sidebar-title">Dashma</h1>
+        <h1 class="sidebar-title">InventorDash</h1>
       </div>
       <nav class="sidebar-nav">
         <a class="nav-item active" data-panel="appearance">Appearance</a>
@@ -48,7 +48,7 @@
           <h3 class="card-title">Site Title</h3>
           <div class="form-group">
             <label class="form-label">Site Name</label>
-            <input type="text" class="form-input" id="siteName" placeholder="Dashma">
+            <input type="text" class="form-input" id="siteName" placeholder="InventorDash">
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -1328,7 +1328,7 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Client ID</label>
-              <input type="text" class="form-input" id="mqttClientId" placeholder="dashma-client">
+              <input type="text" class="form-input" id="mqttClientId" placeholder="inventordash-client">
             </div>
             <div class="form-group"></div>
           </div>
@@ -1445,7 +1445,7 @@
           <ol class="wizard-instructions">
             <li>Go to <a href="https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps" target="_blank" rel="noopener">Azure Portal &gt; App Registrations</a></li>
             <li>Click <strong>"New registration"</strong></li>
-            <li>Enter a name (e.g., "Dashma SSO")</li>
+            <li>Enter a name (e.g., "InventorDash SSO")</li>
             <li>Under "Supported account types", select:<br>
               <em>"Accounts in this organizational directory only"</em></li>
             <li>Leave Redirect URI blank for now (we'll add it later)</li>
@@ -1490,7 +1490,7 @@
           <ol class="wizard-instructions">
             <li>In the left sidebar, click <strong>"Certificates & secrets"</strong></li>
             <li>Click <strong>"New client secret"</strong></li>
-            <li>Enter a description (e.g., "Dashma")</li>
+            <li>Enter a description (e.g., "InventorDash")</li>
             <li>Select an expiration period</li>
             <li>Click <strong>"Add"</strong></li>
             <li><strong>Important:</strong> Copy the <strong>"Value"</strong> immediately (it won't be shown again!)</li>
@@ -1521,7 +1521,7 @@
           <div class="form-group" style="margin-top: 1rem;">
             <label class="form-label">Redirect URI (auto-detected)</label>
             <input type="text" class="form-input" id="wizardRedirectUri" placeholder="https://yourdomain.com/auth/callback">
-            <p class="text-muted" style="font-size: 0.8rem; margin-top: 0.25rem;">Edit only if your Dashma is behind a reverse proxy with a different URL</p>
+            <p class="text-muted" style="font-size: 0.8rem; margin-top: 0.25rem;">Edit only if your InventorDash is behind a reverse proxy with a different URL</p>
           </div>
         </div>
 

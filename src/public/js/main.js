@@ -1,4 +1,4 @@
-// Dashma - Main JavaScript
+// InventorDash - Main JavaScript
 (function() {
   'use strict';
 
@@ -9,8 +9,8 @@
   let searchOpen = false;
   let selectedSearchIndex = -1;
   let filteredResults = [];
-  let collapsedCategories = JSON.parse(localStorage.getItem('dashma-collapsed') || '[]');
-  let selectedTabId = localStorage.getItem('dashma-selected-tab') || null;
+  let collapsedCategories = JSON.parse(localStorage.getItem('inventordash-collapsed') || '[]');
+  let selectedTabId = localStorage.getItem('inventordash-selected-tab') || null;
   let monitoringPollInterval = null;
   let mqttPollInterval = null;
 
@@ -259,7 +259,7 @@
       const normalizedPath = config.path ? (config.path.startsWith('/') ? config.path : `/${config.path}`) : '';
       const brokerUrl = `${protocol}://${config.host}${config.port ? `:${config.port}` : ''}${normalizedPath}`;
       const options = {
-        clientId: config.clientId || `dashma-browser-${widgetId.slice(0, 8)}`,
+        clientId: config.clientId || `inventordash-browser-${widgetId.slice(0, 8)}`,
         username: config.username || undefined,
         password: config.password || undefined,
         reconnectPeriod: 5000,
@@ -531,7 +531,7 @@
     }
 
     // Update browser tab title
-    document.title = s.siteName || 'Dashma';
+    document.title = s.siteName || 'InventorDash';
 
     // Show header now that settings are applied (was hidden to prevent FOUC)
     header.style.visibility = 'visible';
@@ -629,7 +629,7 @@
 
     if (!selectedTabId && tabs.length > 0) {
       selectedTabId = tabs[0].id;
-      localStorage.setItem('dashma-selected-tab', selectedTabId);
+      localStorage.setItem('inventordash-selected-tab', selectedTabId);
     }
 
     tabContainer.innerHTML = tabs.map(tab => {
@@ -641,7 +641,7 @@
       tab.addEventListener('click', () => {
         const tabId = tab.dataset.tabId;
         selectedTabId = tabId;
-        localStorage.setItem('dashma-selected-tab', tabId);
+        localStorage.setItem('inventordash-selected-tab', tabId);
         renderCategories();
       });
     });
@@ -1152,7 +1152,7 @@
       collapsedCategories = collapsedCategories.filter(id => id !== categoryId);
     }
 
-    localStorage.setItem('dashma-collapsed', JSON.stringify(collapsedCategories));
+    localStorage.setItem('inventordash-collapsed', JSON.stringify(collapsedCategories));
   }
 
   // Setup event listeners
@@ -1238,7 +1238,7 @@
       if (header) header.setAttribute('aria-expanded', 'true');
     });
     collapsedCategories = [];
-    localStorage.setItem('dashma-collapsed', JSON.stringify(collapsedCategories));
+    localStorage.setItem('inventordash-collapsed', JSON.stringify(collapsedCategories));
   }
 
   // Collapse all categories
@@ -1251,7 +1251,7 @@
       allCategoryIds.push(category.dataset.categoryId);
     });
     collapsedCategories = allCategoryIds;
-    localStorage.setItem('dashma-collapsed', JSON.stringify(collapsedCategories));
+    localStorage.setItem('inventordash-collapsed', JSON.stringify(collapsedCategories));
   }
 
   // Open search overlay

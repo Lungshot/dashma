@@ -1,11 +1,11 @@
-// Dashma Color Themes
+// InventorDash Color Themes
 // Pre-made color schemes inspired by popular dashboard and editor themes
 
 const DASHMA_THEMES = {
-  // Default Dashma dark theme
+  // Default InventorDash dark theme
   default: {
     name: 'Default',
-    description: 'The original Dashma dark theme',
+    description: 'The original InventorDash dark theme',
     colors: {
       backgroundColor: '#212121',
       textColor: '#ffffff',

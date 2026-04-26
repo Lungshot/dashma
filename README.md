@@ -1,6 +1,8 @@
-# Dashma
+# InventorDash
 
 A minimal, zen-inspired link dashboard homepage. Fast, lightweight, and fully configurable.
+
+Previous project reference: this project was formerly known as **Dashma**. Original repository: [Dashma](https://github.com/Lungshot/dashma).
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
@@ -9,7 +11,7 @@ A minimal, zen-inspired link dashboard homepage. Fast, lightweight, and fully co
 ## ✨ Features
 
 ### 🎨 Beautiful & Minimal
-Dashma embraces the Japanese concept of "Ma" (間) - the beauty of negative space. A clean, distraction-free interface that lets your links breathe.
+InventorDash embraces the Japanese concept of "Ma" (間) - the beauty of negative space. A clean, distraction-free interface that lets your links breathe.
 
 ### ⌨️ Keyboard-First Navigation
 Navigate entirely with your keyboard:
@@ -99,7 +101,7 @@ npm run dev
 ## 📁 Project Structure
 
 ```
-dashma/
+inventordash/
 ├── src/
 │   ├── public/          # Frontend (HTML, CSS, JS)
 │   ├── server/          # Backend (Fastify, routes, auth)
@@ -163,4 +165,3 @@ dashma/
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
-
