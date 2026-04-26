@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 
 const CONFIG_PATH = path.join(__dirname, '..', 'data', 'config.json');
 
@@ -176,7 +176,7 @@ function addWidget(widget) {
   const widgetsInPosition = config.widgets.filter(w => w.position === position);
 
   const newWidget = {
-    id: uuidv4(),
+    id: randomUUID(),
     type: widget.type,
     enabled: widget.enabled !== false,
     position: position,
@@ -262,7 +262,7 @@ function getCategories() {
 function addCategory(category) {
   const config = getConfig();
   const newCategory = {
-    id: uuidv4(),
+    id: randomUUID(),
     name: category.name,
     order: config.categories.length,
     ...category
@@ -302,7 +302,7 @@ function getTabs() {
 
   if (config.tabs.length === 0) {
     config.tabs = [{
-      id: uuidv4(),
+      id: randomUUID(),
       name: 'Default',
       categoryIds: (config.categories || []).map(category => category.id),
       order: 0
@@ -317,7 +317,7 @@ function addTab(tab) {
   const config = getConfig();
   if (!config.tabs) config.tabs = [];
   const newTab = {
-    id: uuidv4(),
+    id: randomUUID(),
     name: tab.name,
     categoryIds: Array.isArray(tab.categoryIds) ? tab.categoryIds : [],
     order: config.tabs.length
@@ -346,7 +346,7 @@ function deleteTab(id) {
 
   if (config.tabs.length === 0) {
     config.tabs = [{
-      id: uuidv4(),
+      id: randomUUID(),
       name: 'Default',
       categoryIds: (config.categories || []).map(category => category.id),
       order: 0
@@ -365,7 +365,7 @@ function reorderTabs(orderedIds) {
   }).filter(Boolean);
 
   config.tabs = reorderedTabs.length > 0 ? reorderedTabs : [{
-    id: uuidv4(),
+    id: randomUUID(),
     name: 'Default',
     categoryIds: (config.categories || []).map(category => category.id),
     order: 0
@@ -392,7 +392,7 @@ function getLinks() {
 function addLink(link) {
   const config = getConfig();
   const newLink = {
-    id: uuidv4(),
+    id: randomUUID(),
     name: link.name,
     url: link.url,
     categoryId: link.categoryId,
@@ -494,7 +494,7 @@ function addUser(username, password) {
   }
 
   const newUser = {
-    id: uuidv4(),
+    id: randomUUID(),
     username: username,
     passwordHash: bcrypt.hashSync(password, 10),
     createdAt: new Date().toISOString()
@@ -601,7 +601,7 @@ function addCategoryRequest(categoryData, submittedBy = 'anonymous') {
   }
 
   const newRequest = {
-    id: uuidv4(),
+    id: randomUUID(),
     name: categoryData.name,
     status: 'pending',
     submittedAt: new Date().toISOString(),
@@ -622,7 +622,7 @@ function addLinkRequest(linkData, submittedBy = 'anonymous') {
   }
 
   const newRequest = {
-    id: uuidv4(),
+    id: randomUUID(),
     name: linkData.name,
     url: linkData.url,
     categoryId: linkData.categoryId,

@@ -2,10 +2,68 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
+const crypto = require('crypto');
+const { pipeline } = require('stream/promises');
 const config = require('./config');
 const auth = require('./auth');
 const pingService = require('./ping-service');
 const mqttService = require('./mqtt-service');
+
+const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_BYTES) || 5 * 1024 * 1024;
+const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml']);
+const MIME_TO_EXTENSION = {
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'image/svg+xml': '.svg'
+};
+const ALLOWED_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg']);
+const isProduction = process.env.NODE_ENV === 'production';
+
+function resolveEntraRedirectUri(settings, callbackPath, request) {
+  if (settings.entraId?.redirectUri) {
+    return settings.entraId.redirectUri;
+  }
+
+  if (process.env.PUBLIC_BASE_URL) {
+    return new URL(callbackPath, process.env.PUBLIC_BASE_URL).toString();
+  }
+
+  // In production, avoid constructing callback URLs from request headers.
+  if (isProduction) {
+    return null;
+  }
+
+  return new URL(callbackPath, `${request.protocol}://${request.hostname}`).toString();
+}
+
+async function storeUploadedImage(data, prefix) {
+  const mimeType = (data.mimetype || '').toLowerCase();
+  const sourceExt = (path.extname(data.filename || '') || '').toLowerCase();
+  const extension = ALLOWED_IMAGE_EXTENSIONS.has(sourceExt) ? sourceExt : MIME_TO_EXTENSION[mimeType];
+
+  if (!ALLOWED_IMAGE_MIME_TYPES.has(mimeType) || !extension) {
+    const err = new Error('Invalid file type');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const filename = `${prefix}-${Date.now()}-${crypto.randomUUID()}${extension}`;
+  const uploadPath = path.join(__dirname, '..', 'public', 'uploads', filename);
+  const writeStream = fs.createWriteStream(uploadPath, { flags: 'wx' });
+
+  await pipeline(data.file, writeStream);
+
+  if (data.file.truncated) {
+    fs.unlink(uploadPath, () => {});
+    const err = new Error(`File exceeds max size (${MAX_UPLOAD_BYTES} bytes)`);
+    err.statusCode = 413;
+    throw err;
+  }
+
+  return `/uploads/${filename}`;
+}
 
 // Helper to fetch a URL and check if it returns a valid image
 function fetchImage(url, timeout = 3000) {
@@ -228,7 +286,10 @@ async function registerRoutes(fastify) {
 
     const redirect = request.query.redirect || '/';
     // Use configured redirect URI, falling back to /auth/callback
-    const redirectUri = settings.entraId?.redirectUri || `${request.protocol}://${request.hostname}/auth/callback`;
+    const redirectUri = resolveEntraRedirectUri(settings, '/auth/callback', request);
+    if (!redirectUri) {
+      return reply.redirect('/login?error=entra_config');
+    }
     const authUrl = await auth.getAuthUrl(redirectUri);
 
     if (authUrl) {
@@ -244,7 +305,10 @@ async function registerRoutes(fastify) {
   fastify.get('/callback', async (request, reply) => {
     const { code } = request.query;
     const settings = config.getConfig().settings;
-    const redirectUri = settings.entraId.redirectUri || `${request.protocol}://${request.hostname}/callback`;
+    const redirectUri = resolveEntraRedirectUri(settings, '/callback', request);
+    if (!redirectUri) {
+      return reply.redirect('/login?error=entra_config');
+    }
 
     const result = await auth.handleCallback(code, redirectUri);
     if (result) {
@@ -264,7 +328,10 @@ async function registerRoutes(fastify) {
   fastify.get('/auth/callback', async (request, reply) => {
     const { code } = request.query;
     const settings = config.getConfig().settings;
-    const redirectUri = settings.entraId?.redirectUri || `${request.protocol}://${request.hostname}/auth/callback`;
+    const redirectUri = resolveEntraRedirectUri(settings, '/auth/callback', request);
+    if (!redirectUri) {
+      return reply.redirect('/login?error=entra_config');
+    }
 
     const result = await auth.handleCallback(code, redirectUri);
     if (result) {
@@ -365,7 +432,10 @@ async function registerRoutes(fastify) {
     }
 
     // Use configured redirect URI, falling back to /auth/callback
-    const redirectUri = settings.entraId?.redirectUri || `${request.protocol}://${request.hostname}/auth/callback`;
+    const redirectUri = resolveEntraRedirectUri(settings, '/auth/callback', request);
+    if (!redirectUri) {
+      return reply.redirect('/admin/login?error=entra_config');
+    }
     const authUrl = await auth.getAuthUrl(redirectUri);
 
     if (authUrl) {
@@ -379,7 +449,10 @@ async function registerRoutes(fastify) {
   fastify.get('/admin/callback', async (request, reply) => {
     const { code } = request.query;
     const settings = config.getConfig().settings;
-    const redirectUri = settings.entraId.redirectUri || `${request.protocol}://${request.hostname}/admin/callback`;
+    const redirectUri = resolveEntraRedirectUri(settings, '/admin/callback', request);
+    if (!redirectUri) {
+      return reply.redirect('/admin/login?error=entra_config');
+    }
 
     const result = await auth.handleCallback(code, redirectUri);
     if (result) {
@@ -542,21 +615,13 @@ async function registerRoutes(fastify) {
         return reply.code(400).send({ error: 'No file uploaded' });
       }
 
-      const filename = `background-${Date.now()}${path.extname(data.filename)}`;
-      const uploadPath = path.join(__dirname, '..', 'public', 'uploads', filename);
-      
-      const writeStream = fs.createWriteStream(uploadPath);
-      await data.file.pipe(writeStream);
-      
-      await new Promise((resolve, reject) => {
-        writeStream.on('finish', resolve);
-        writeStream.on('error', reject);
-      });
-
-      const imageUrl = `/uploads/${filename}`;
-      config.updateSettings({ backgroundImage: imageUrl });
-      
-      return { success: true, url: imageUrl };
+      try {
+        const imageUrl = await storeUploadedImage(data, 'background');
+        config.updateSettings({ backgroundImage: imageUrl });
+        return { success: true, url: imageUrl };
+      } catch (err) {
+        return reply.code(err.statusCode || 500).send({ error: err.message || 'Upload failed' });
+      }
     });
 
     // Upload custom link icon
@@ -566,18 +631,12 @@ async function registerRoutes(fastify) {
         return reply.code(400).send({ error: 'No file uploaded' });
       }
 
-      const filename = `icon-${Date.now()}${path.extname(data.filename)}`;
-      const uploadPath = path.join(__dirname, '..', 'public', 'uploads', filename);
-
-      const writeStream = fs.createWriteStream(uploadPath);
-      await data.file.pipe(writeStream);
-
-      await new Promise((resolve, reject) => {
-        writeStream.on('finish', resolve);
-        writeStream.on('error', reject);
-      });
-
-      return { success: true, url: `/uploads/${filename}` };
+      try {
+        const imageUrl = await storeUploadedImage(data, 'icon');
+        return { success: true, url: imageUrl };
+      } catch (err) {
+        return reply.code(err.statusCode || 500).send({ error: err.message || 'Upload failed' });
+      }
     });
 
     // Upload site logo
@@ -587,21 +646,13 @@ async function registerRoutes(fastify) {
         return reply.code(400).send({ error: 'No file uploaded' });
       }
 
-      const filename = `logo-${Date.now()}${path.extname(data.filename)}`;
-      const uploadPath = path.join(__dirname, '..', 'public', 'uploads', filename);
-
-      const writeStream = fs.createWriteStream(uploadPath);
-      await data.file.pipe(writeStream);
-
-      await new Promise((resolve, reject) => {
-        writeStream.on('finish', resolve);
-        writeStream.on('error', reject);
-      });
-
-      const logoUrl = `/uploads/${filename}`;
-      config.updateSettings({ siteLogo: logoUrl });
-
-      return { success: true, url: logoUrl };
+      try {
+        const logoUrl = await storeUploadedImage(data, 'logo');
+        config.updateSettings({ siteLogo: logoUrl });
+        return { success: true, url: logoUrl };
+      } catch (err) {
+        return reply.code(err.statusCode || 500).send({ error: err.message || 'Upload failed' });
+      }
     });
 
     // Update admin credentials

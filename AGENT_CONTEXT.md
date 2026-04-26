@@ -44,8 +44,11 @@ Container includes `iputils` and `NET_RAW` capability for ICMP ping monitoring.
 ## Environment Variables
 - `PORT` (default `3000`)
 - `HOST` (default `0.0.0.0`)
-- `SESSION_SECRET` (must be changed in production)
+- `SESSION_SECRET` (required in production, >= 32 chars)
 - `COOKIE_SECURE` (`true` only when app itself serves direct HTTPS)
+- `TRUST_PROXY` (`true` when behind reverse proxy and relying on forwarded headers)
+- `PUBLIC_BASE_URL` (optional canonical base URL for Entra callback construction)
+- `MAX_UPLOAD_BYTES` (upload cap; default `5242880` / 5MB)
 - `NODE_ENV` (typically `production` in Docker)
 
 ## Project Structure
@@ -147,9 +150,9 @@ Admin (`src/public/js/admin.js`):
 - Entra setup wizard with server-side validation.
 
 ## Operational Notes and Risks
-- `SESSION_SECRET` has insecure fallback value; must be overridden in production.
+- In production startup is blocked if `SESSION_SECRET` is missing/weak.
 - `config.json` currently contains real hashed admin credentials and runtime data; treat as sensitive state.
-- Upload endpoints trust file extension and do not enforce MIME/size validation.
+- Upload endpoints now enforce MIME/extension allowlist and size limits.
 - `authMode: none` disables admin protection entirely.
 - MQTT widget state includes `username/password` in server-side state object; avoid exposing sensitive values in public APIs/UI.
 - File-based persistence is simple and effective for single-instance deployments but not for horizontal scaling.

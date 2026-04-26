@@ -12,13 +12,16 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOST=0.0.0.0
+      # Set TRUST_PROXY=true when behind reverse proxy and using forwarded headers
+      - TRUST_PROXY=${TRUST_PROXY:-false}
+      # Optional external URL used for secure Entra callback URI construction
+      # Example: https://inventordash.example.com
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-}
       # COOKIE_SECURE: Set to 'true' only if NOT behind a reverse proxy (direct HTTPS)
       # Leave unset or 'false' when behind Caddy/nginx/Traefik that handles SSL
       # - COOKIE_SECURE=true
-      # Optional: Set a custom session secret for enhanced security
-      # In Portainer, add this as an environment variable:
-      # SESSION_SECRET=your-secure-random-string-minimum-32-characters
-      - SESSION_SECRET=${SESSION_SECRET:-change-this-session-secret-in-production}
+      # Required in production: must be a strong random string (>=32 chars)
+      - SESSION_SECRET=${SESSION_SECRET}
     volumes:
       - inventordash_data:/app/src/data
       - inventordash_uploads:/app/src/public/uploads

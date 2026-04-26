@@ -45,6 +45,7 @@ Everything is configured through a web GUI at `/admin` - no config files to edit
 ### Using Docker (Recommended)
 
 ```bash
+export SESSION_SECRET="replace-with-a-random-secret-of-32+chars"
 docker-compose up -d --build
 ```
 

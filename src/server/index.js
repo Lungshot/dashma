@@ -1,4 +1,3 @@
-const fastify = require('fastify')({ logger: true });
 const path = require('path');
 const config = require('./config');
 const { registerRoutes } = require('./routes');
@@ -6,13 +5,30 @@ const auth = require('./auth');
 const FileSessionStore = require('./session-store');
 const pingService = require('./ping-service');
 const mqttService = require('./mqtt-service');
+const DEFAULT_SESSION_SECRET = 'inventordash-secret-change-in-production-min-32-chars';
+const isProduction = process.env.NODE_ENV === 'production';
+
+const sessionSecret = process.env.SESSION_SECRET || DEFAULT_SESSION_SECRET;
+if (isProduction && (!process.env.SESSION_SECRET || sessionSecret.length < 32 || sessionSecret === DEFAULT_SESSION_SECRET)) {
+  throw new Error('SESSION_SECRET must be explicitly set to a strong value (>= 32 chars) in production');
+}
+
+const fastify = require('fastify')({
+  logger: true,
+  trustProxy: process.env.TRUST_PROXY === 'true'
+});
 
 // Register plugins
 fastify.register(require('@fastify/formbody'));
-fastify.register(require('@fastify/multipart'));
+fastify.register(require('@fastify/multipart'), {
+  limits: {
+    files: 1,
+    fileSize: Number(process.env.MAX_UPLOAD_BYTES) || 5 * 1024 * 1024 // 5MB default
+  }
+});
 fastify.register(require('@fastify/cookie'));
 fastify.register(require('@fastify/session'), {
-  secret: process.env.SESSION_SECRET || 'inventordash-secret-change-in-production-min-32-chars',
+  secret: sessionSecret,
   store: new FileSessionStore({
     path: path.join(__dirname, '..', 'data', 'sessions'), // Store in src/data/sessions (persisted by Docker volume)
     ttl: 86400, // 24 hours in seconds
@@ -26,6 +42,15 @@ fastify.register(require('@fastify/session'), {
   },
   saveUninitialized: false,
   rolling: true // Reset cookie maxAge on every response, keeping session alive while user is active
+});
+
+// Baseline hardening headers
+fastify.addHook('onSend', async (request, reply, payload) => {
+  reply.header('X-Content-Type-Options', 'nosniff');
+  reply.header('X-Frame-Options', 'DENY');
+  reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  reply.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  return payload;
 });
 
 // Serve static files (but not index.html at root - we handle that with auth)
