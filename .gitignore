@@ -4,3 +4,4 @@ node_modules/
 src/public/uploads/*
 !src/public/uploads/.gitkeep
 data/sessions/
+src/data/sessions/

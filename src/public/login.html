@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashma - Login</title>
+  <title>InventorDash - Login</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -101,7 +101,7 @@
 </head>
 <body>
   <div class="login-container">
-    <h1 class="login-title" id="site-title">Dashma</h1>
+    <h1 class="login-title" id="site-title">InventorDash</h1>
 
     <div id="error-message" class="error-message hidden"></div>
 
@@ -150,8 +150,8 @@
       .then(r => r.json())
       .then(data => {
         // Update title with site name
-        document.getElementById('site-title').textContent = data.settings.siteName || 'Dashma';
-        document.title = (data.settings.siteName || 'Dashma') + ' - Login';
+        document.getElementById('site-title').textContent = data.settings.siteName || 'InventorDash';
+        document.title = (data.settings.siteName || 'InventorDash') + ' - Login';
 
         // Handle auth mode - SSO only hides local login form
         if (data.settings.mainAuthMode === 'entraId') {

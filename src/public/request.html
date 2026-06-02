@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Request - Dashma</title>
+  <title>Request - InventorDash</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -181,7 +181,7 @@
     <a href="/" class="back-link">&larr; Back to Dashboard</a>
 
     <header>
-      <h1 class="site-title" id="site-title">Dashma</h1>
+      <h1 class="site-title" id="site-title">InventorDash</h1>
       <p class="page-subtitle">Submit a request for a new category or link</p>
     </header>
 
@@ -256,8 +256,8 @@
       try {
         // Load settings for site name
         const publicData = await fetch('/api/public/data').then(r => r.json());
-        document.getElementById('site-title').textContent = publicData.settings.siteName || 'Dashma';
-        document.title = (publicData.settings.siteName || 'Dashma') + ' - Request';
+        document.getElementById('site-title').textContent = publicData.settings.siteName || 'InventorDash';
+        document.title = (publicData.settings.siteName || 'InventorDash') + ' - Request';
 
         // Load categories for dropdown
         await refreshCategories();

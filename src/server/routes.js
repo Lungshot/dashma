@@ -2,9 +2,68 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
+const crypto = require('crypto');
+const { pipeline } = require('stream/promises');
 const config = require('./config');
 const auth = require('./auth');
 const pingService = require('./ping-service');
+const mqttService = require('./mqtt-service');
+
+const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_BYTES) || 5 * 1024 * 1024;
+const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml']);
+const MIME_TO_EXTENSION = {
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'image/svg+xml': '.svg'
+};
+const ALLOWED_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg']);
+const isProduction = process.env.NODE_ENV === 'production';
+
+function resolveEntraRedirectUri(settings, callbackPath, request) {
+  if (settings.entraId?.redirectUri) {
+    return settings.entraId.redirectUri;
+  }
+
+  if (process.env.PUBLIC_BASE_URL) {
+    return new URL(callbackPath, process.env.PUBLIC_BASE_URL).toString();
+  }
+
+  // In production, avoid constructing callback URLs from request headers.
+  if (isProduction) {
+    return null;
+  }
+
+  return new URL(callbackPath, `${request.protocol}://${request.hostname}`).toString();
+}
+
+async function storeUploadedImage(data, prefix) {
+  const mimeType = (data.mimetype || '').toLowerCase();
+  const sourceExt = (path.extname(data.filename || '') || '').toLowerCase();
+  const extension = ALLOWED_IMAGE_EXTENSIONS.has(sourceExt) ? sourceExt : MIME_TO_EXTENSION[mimeType];
+
+  if (!ALLOWED_IMAGE_MIME_TYPES.has(mimeType) || !extension) {
+    const err = new Error('Invalid file type');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const filename = `${prefix}-${Date.now()}-${crypto.randomUUID()}${extension}`;
+  const uploadPath = path.join(__dirname, '..', 'public', 'uploads', filename);
+  const writeStream = fs.createWriteStream(uploadPath, { flags: 'wx' });
+
+  await pipeline(data.file, writeStream);
+
+  if (data.file.truncated) {
+    fs.unlink(uploadPath, () => {});
+    const err = new Error(`File exceeds max size (${MAX_UPLOAD_BYTES} bytes)`);
+    err.statusCode = 413;
+    throw err;
+  }
+
+  return `/uploads/${filename}`;
+}
 
 // Helper to fetch a URL and check if it returns a valid image
 function fetchImage(url, timeout = 3000) {
@@ -84,6 +143,7 @@ async function registerRoutes(fastify) {
     return {
       settings: config.getPublicSettings(),
       categories: config.getCategories(),
+      tabs: config.getTabs(),
       links: config.getLinks(),
       widgets: config.getWidgets().filter(w => w.enabled)
     };
@@ -92,6 +152,10 @@ async function registerRoutes(fastify) {
   // Public API - get monitoring status for all hosts
   fastify.get('/api/public/monitoring/status', async (request, reply) => {
     return pingService.getAllStatuses();
+  });
+
+  fastify.get('/api/public/mqtt/status', async () => {
+    return mqttService.getAllStates();
   });
 
   // Favicon proxy - fetch favicon for a URL with fallback chain and fuzzy app name matching
@@ -222,7 +286,10 @@ async function registerRoutes(fastify) {
 
     const redirect = request.query.redirect || '/';
     // Use configured redirect URI, falling back to /auth/callback
-    const redirectUri = settings.entraId?.redirectUri || `${request.protocol}://${request.hostname}/auth/callback`;
+    const redirectUri = resolveEntraRedirectUri(settings, '/auth/callback', request);
+    if (!redirectUri) {
+      return reply.redirect('/login?error=entra_config');
+    }
     const authUrl = await auth.getAuthUrl(redirectUri);
 
     if (authUrl) {
@@ -238,7 +305,10 @@ async function registerRoutes(fastify) {
   fastify.get('/callback', async (request, reply) => {
     const { code } = request.query;
     const settings = config.getConfig().settings;
-    const redirectUri = settings.entraId.redirectUri || `${request.protocol}://${request.hostname}/callback`;
+    const redirectUri = resolveEntraRedirectUri(settings, '/callback', request);
+    if (!redirectUri) {
+      return reply.redirect('/login?error=entra_config');
+    }
 
     const result = await auth.handleCallback(code, redirectUri);
     if (result) {
@@ -258,7 +328,10 @@ async function registerRoutes(fastify) {
   fastify.get('/auth/callback', async (request, reply) => {
     const { code } = request.query;
     const settings = config.getConfig().settings;
-    const redirectUri = settings.entraId?.redirectUri || `${request.protocol}://${request.hostname}/auth/callback`;
+    const redirectUri = resolveEntraRedirectUri(settings, '/auth/callback', request);
+    if (!redirectUri) {
+      return reply.redirect('/login?error=entra_config');
+    }
 
     const result = await auth.handleCallback(code, redirectUri);
     if (result) {
@@ -359,7 +432,10 @@ async function registerRoutes(fastify) {
     }
 
     // Use configured redirect URI, falling back to /auth/callback
-    const redirectUri = settings.entraId?.redirectUri || `${request.protocol}://${request.hostname}/auth/callback`;
+    const redirectUri = resolveEntraRedirectUri(settings, '/auth/callback', request);
+    if (!redirectUri) {
+      return reply.redirect('/admin/login?error=entra_config');
+    }
     const authUrl = await auth.getAuthUrl(redirectUri);
 
     if (authUrl) {
@@ -373,7 +449,10 @@ async function registerRoutes(fastify) {
   fastify.get('/admin/callback', async (request, reply) => {
     const { code } = request.query;
     const settings = config.getConfig().settings;
-    const redirectUri = settings.entraId.redirectUri || `${request.protocol}://${request.hostname}/admin/callback`;
+    const redirectUri = resolveEntraRedirectUri(settings, '/admin/callback', request);
+    if (!redirectUri) {
+      return reply.redirect('/admin/login?error=entra_config');
+    }
 
     const result = await auth.handleCallback(code, redirectUri);
     if (result) {
@@ -438,6 +517,7 @@ async function registerRoutes(fastify) {
       return {
         settings: cfg.settings,
         categories: cfg.categories,
+        tabs: cfg.tabs || [],
         links: cfg.links,
         widgets: cfg.widgets || [],
         admin: {
@@ -476,6 +556,25 @@ async function registerRoutes(fastify) {
       return { success: true };
     });
 
+    // Tabs CRUD
+    fastify.post('/api/admin/tabs', async (request) => {
+      return config.addTab(request.body);
+    });
+
+    fastify.put('/api/admin/tabs/:id', async (request) => {
+      return config.updateTab(request.params.id, request.body);
+    });
+
+    fastify.delete('/api/admin/tabs/:id', async (request) => {
+      config.deleteTab(request.params.id);
+      return { success: true };
+    });
+
+    fastify.put('/api/admin/tabs/reorder', async (request) => {
+      config.reorderTabs(request.body.ids);
+      return { success: true };
+    });
+
     // Links CRUD
     fastify.post('/api/admin/links', async (request) => {
       return config.addLink(request.body);
@@ -498,7 +597,7 @@ async function registerRoutes(fastify) {
     // Export config
     fastify.get('/api/admin/export', async (request, reply) => {
       const cfg = config.exportConfig();
-      reply.header('Content-Disposition', 'attachment; filename="dashma-config.json"');
+      reply.header('Content-Disposition', 'attachment; filename="inventordash-config.json"');
       reply.header('Content-Type', 'application/json');
       return cfg;
     });
@@ -516,21 +615,13 @@ async function registerRoutes(fastify) {
         return reply.code(400).send({ error: 'No file uploaded' });
       }
 
-      const filename = `background-${Date.now()}${path.extname(data.filename)}`;
-      const uploadPath = path.join(__dirname, '..', 'public', 'uploads', filename);
-      
-      const writeStream = fs.createWriteStream(uploadPath);
-      await data.file.pipe(writeStream);
-      
-      await new Promise((resolve, reject) => {
-        writeStream.on('finish', resolve);
-        writeStream.on('error', reject);
-      });
-
-      const imageUrl = `/uploads/${filename}`;
-      config.updateSettings({ backgroundImage: imageUrl });
-      
-      return { success: true, url: imageUrl };
+      try {
+        const imageUrl = await storeUploadedImage(data, 'background');
+        config.updateSettings({ backgroundImage: imageUrl });
+        return { success: true, url: imageUrl };
+      } catch (err) {
+        return reply.code(err.statusCode || 500).send({ error: err.message || 'Upload failed' });
+      }
     });
 
     // Upload custom link icon
@@ -540,18 +631,12 @@ async function registerRoutes(fastify) {
         return reply.code(400).send({ error: 'No file uploaded' });
       }
 
-      const filename = `icon-${Date.now()}${path.extname(data.filename)}`;
-      const uploadPath = path.join(__dirname, '..', 'public', 'uploads', filename);
-
-      const writeStream = fs.createWriteStream(uploadPath);
-      await data.file.pipe(writeStream);
-
-      await new Promise((resolve, reject) => {
-        writeStream.on('finish', resolve);
-        writeStream.on('error', reject);
-      });
-
-      return { success: true, url: `/uploads/${filename}` };
+      try {
+        const imageUrl = await storeUploadedImage(data, 'icon');
+        return { success: true, url: imageUrl };
+      } catch (err) {
+        return reply.code(err.statusCode || 500).send({ error: err.message || 'Upload failed' });
+      }
     });
 
     // Upload site logo
@@ -561,21 +646,13 @@ async function registerRoutes(fastify) {
         return reply.code(400).send({ error: 'No file uploaded' });
       }
 
-      const filename = `logo-${Date.now()}${path.extname(data.filename)}`;
-      const uploadPath = path.join(__dirname, '..', 'public', 'uploads', filename);
-
-      const writeStream = fs.createWriteStream(uploadPath);
-      await data.file.pipe(writeStream);
-
-      await new Promise((resolve, reject) => {
-        writeStream.on('finish', resolve);
-        writeStream.on('error', reject);
-      });
-
-      const logoUrl = `/uploads/${filename}`;
-      config.updateSettings({ siteLogo: logoUrl });
-
-      return { success: true, url: logoUrl };
+      try {
+        const logoUrl = await storeUploadedImage(data, 'logo');
+        config.updateSettings({ siteLogo: logoUrl });
+        return { success: true, url: logoUrl };
+      } catch (err) {
+        return reply.code(err.statusCode || 500).send({ error: err.message || 'Upload failed' });
+      }
     });
 
     // Update admin credentials
@@ -686,6 +763,7 @@ async function registerRoutes(fastify) {
       try {
         const widget = config.addWidget(request.body);
         pingService.refreshHosts();
+        mqttService.refreshWidgets();
         return widget;
       } catch (err) {
         return reply.code(400).send({ error: err.message });
@@ -696,6 +774,7 @@ async function registerRoutes(fastify) {
       try {
         const widget = config.updateWidget(request.params.id, request.body);
         pingService.refreshHosts();
+        mqttService.refreshWidgets();
         return widget;
       } catch (err) {
         return reply.code(400).send({ error: err.message });
@@ -705,6 +784,7 @@ async function registerRoutes(fastify) {
     fastify.delete('/api/admin/widgets/:id', async (request) => {
       config.deleteWidget(request.params.id);
       pingService.refreshHosts();
+      mqttService.refreshWidgets();
       return { success: true };
     });
 
