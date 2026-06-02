@@ -11,7 +11,7 @@ Previous project reference: this project was formerly known as **Dashma**. Origi
 ## ✨ Features
 
 ### 🎨 Beautiful & Minimal
-InventorDash embraces the Japanese concept of "Ma" (間) - the beauty of negative space. A clean, distraction-free interface that lets your links breathe.
+Dashma embraces the Japanese concept of "Ma" (間) - the beauty of negative space. A clean, distraction-free interface that lets your links breathe.
 
 ### ⌨️ Keyboard-First Navigation
 Navigate entirely with your keyboard:
