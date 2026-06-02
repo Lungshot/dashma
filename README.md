@@ -1,4 +1,4 @@
-# InventorDash
+# Dashma
 
 A minimal, zen-inspired link dashboard homepage. Fast, lightweight, and fully configurable.
 
