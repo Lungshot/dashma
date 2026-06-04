@@ -174,6 +174,60 @@
       color: #666666;
       margin-bottom: 4px;
     }
+    .session-requests-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .session-requests-header h3 {
+      margin-bottom: 0;
+    }
+    .session-requests-note {
+      font-size: 0.7rem;
+      color: #666666;
+      margin-bottom: 15px;
+    }
+    .clear-link {
+      background: none;
+      border: none;
+      color: #888888;
+      font-family: inherit;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+    }
+    .clear-link:hover {
+      color: #ffffff;
+    }
+    .request-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .status-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .status-badge.status-pending {
+      background: rgba(255, 200, 0, 0.25);
+      border: 1px solid rgba(255, 200, 0, 0.4);
+    }
+    .status-badge.status-approved {
+      background: rgba(0, 200, 100, 0.25);
+      border: 1px solid rgba(0, 200, 100, 0.4);
+    }
+    .status-badge.status-denied {
+      background: rgba(255, 60, 60, 0.25);
+      border: 1px solid rgba(255, 60, 60, 0.4);
+    }
   </style>
 </head>
 <body>
@@ -237,19 +291,48 @@
       </div>
     </div>
 
-    <!-- Session Requests -->
+    <!-- Your Recent Requests (stored locally in this browser) -->
     <div id="session-requests" class="session-requests hidden">
-      <h3>Your Pending Requests This Session</h3>
+      <div class="session-requests-header">
+        <h3>Your Recent Requests</h3>
+        <button type="button" id="clear-requests" class="clear-link">Clear</button>
+      </div>
+      <p class="session-requests-note">Stored in this browser only and cleared if you clear site data.</p>
       <div id="session-requests-list"></div>
     </div>
   </div>
 
   <script>
-    // Track requests made in this session
-    const sessionRequests = {
-      categories: [],
-      links: []
-    };
+    // The user side is intentionally temporary: a user's submitted request ids
+    // are stored only in this browser's localStorage. We look up their live
+    // status from the server but never persist any other user's data.
+    const STORAGE_KEY = 'dashma_my_requests';
+
+    // Array of { id, type: 'category'|'link', name, submittedAt }
+    let myRequests = loadMyRequests();
+
+    function loadMyRequests() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function saveMyRequests() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(myRequests));
+      } catch (err) {
+        // Storage unavailable (private mode, quota) - panel just won't persist
+      }
+    }
+
+    function addMyRequest(entry) {
+      myRequests.push(entry);
+      saveMyRequests();
+    }
 
     // Load categories and settings
     async function loadData() {
@@ -261,6 +344,9 @@
 
         // Load categories for dropdown
         await refreshCategories();
+
+        // Show the user's own request statuses from this browser
+        await refreshMyRequests();
       } catch (err) {
         console.error('Failed to load data:', err);
       }
@@ -288,11 +374,11 @@
           select.appendChild(existingGroup);
         }
 
-        // Combine server pending + session pending (deduplicate)
+        // Combine server pending + this browser's own pending categories (deduplicate)
         const allPending = [...data.pendingCategories];
-        sessionRequests.categories.forEach(sessionCat => {
-          if (!allPending.find(p => p.id === sessionCat.id)) {
-            allPending.push(sessionCat);
+        myRequests.filter(r => r.type === 'category').forEach(localCat => {
+          if (!allPending.find(p => p.id === localCat.id)) {
+            allPending.push(localCat);
           }
         });
 
@@ -327,32 +413,83 @@
       }, 5000);
     }
 
-    function updateSessionRequestsDisplay() {
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text == null ? '' : text;
+      return div.innerHTML;
+    }
+
+    function statusLabel(status) {
+      if (status === 'approved') return 'Approved';
+      if (status === 'denied') return 'Denied';
+      return 'Pending';
+    }
+
+    // Fetch live statuses for this browser's stored requests, prune any the
+    // server no longer knows about (e.g. deleted), and render the panel.
+    async function refreshMyRequests() {
       const container = document.getElementById('session-requests');
       const list = document.getElementById('session-requests-list');
 
-      if (sessionRequests.categories.length === 0 && sessionRequests.links.length === 0) {
+      if (myRequests.length === 0) {
         container.classList.add('hidden');
+        list.innerHTML = '';
+        return;
+      }
+
+      const ids = myRequests.map(r => r.id).join(',');
+      let statusMap = {};
+      try {
+        const statuses = await fetch('/api/public/request/status?ids=' + encodeURIComponent(ids))
+          .then(r => r.json());
+        if (Array.isArray(statuses)) {
+          statuses.forEach(s => { statusMap[s.id] = s.status; });
+        }
+      } catch (err) {
+        console.error('Failed to load request statuses:', err);
+        // Fall back to showing entries as pending rather than dropping them
+      }
+
+      // Prune entries the server no longer knows about (deleted history)
+      const known = Object.keys(statusMap);
+      if (known.length > 0) {
+        const before = myRequests.length;
+        myRequests = myRequests.filter(r => statusMap[r.id] !== undefined);
+        if (myRequests.length !== before) saveMyRequests();
+      }
+
+      if (myRequests.length === 0) {
+        container.classList.add('hidden');
+        list.innerHTML = '';
         return;
       }
 
       container.classList.remove('hidden');
-      list.innerHTML = '';
-
-      sessionRequests.categories.forEach(cat => {
-        const item = document.createElement('div');
-        item.className = 'request-item';
-        item.innerHTML = `<div class="request-type">Category</div><div>${cat.name}</div>`;
-        list.appendChild(item);
-      });
-
-      sessionRequests.links.forEach(link => {
-        const item = document.createElement('div');
-        item.className = 'request-item';
-        item.innerHTML = `<div class="request-type">Link</div><div>${link.name} - ${link.url}</div>`;
-        list.appendChild(item);
-      });
+      list.innerHTML = myRequests.map(req => {
+        const status = statusMap[req.id] || 'pending';
+        const statusClass = status === 'approved' ? 'status-approved'
+          : status === 'denied' ? 'status-denied' : 'status-pending';
+        return `
+          <div class="request-item">
+            <div class="request-item-row">
+              <div>
+                <div class="request-type">${escapeHtml(req.type)}</div>
+                <div>${escapeHtml(req.name)}</div>
+              </div>
+              <span class="status-badge ${statusClass}">${statusLabel(status)}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
+
+    // Clear this browser's stored requests
+    document.getElementById('clear-requests').addEventListener('click', () => {
+      myRequests = [];
+      saveMyRequests();
+      refreshMyRequests();
+      refreshCategories();
+    });
 
     // Category form submission
     document.getElementById('category-form').addEventListener('submit', async (e) => {
@@ -376,9 +513,9 @@
           throw new Error(result.error || 'Failed to submit request');
         }
 
-        // Add to session requests
-        sessionRequests.categories.push(result);
-        updateSessionRequestsDisplay();
+        // Store in this browser and refresh the status panel
+        addMyRequest({ id: result.id, type: 'category', name: result.name, submittedAt: result.submittedAt });
+        await refreshMyRequests();
 
         // Refresh category dropdown
         await refreshCategories();
@@ -430,9 +567,9 @@
           throw new Error(result.error || 'Failed to submit request');
         }
 
-        // Add to session requests
-        sessionRequests.links.push(result);
-        updateSessionRequestsDisplay();
+        // Store in this browser and refresh the status panel
+        addMyRequest({ id: result.id, type: 'link', name: result.name, submittedAt: result.submittedAt });
+        await refreshMyRequests();
 
         showMessage('link-message', 'Link request submitted successfully!');
         document.getElementById('link-form').reset();
