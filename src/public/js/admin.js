@@ -5,6 +5,8 @@
   let appConfig = null;
 
   let users = [];
+  let roles = [];
+  let ssoMappings = {}; // { email: [roleId...] }
   let requests = { categories: [], links: [] };
 
   // Auto-save debounce timer
@@ -102,6 +104,8 @@
   async function init() {
     await loadConfig();
     await loadUsers();
+    await loadRoles();
+    await loadSsoMappings();
     await loadRequests();
     setupNavigation();
     populateThemeDropdown();
@@ -111,6 +115,8 @@
     renderLinks();
     renderWidgets();
     renderUsers();
+    renderRoles();
+    renderSsoMappings();
     renderRequests();
     updateRequestsBadge();
   }
@@ -198,6 +204,34 @@
     }
   }
 
+  // Load roles
+  async function loadRoles() {
+    try {
+      const response = await authFetch('/api/admin/roles');
+      if (!response.ok) throw new Error('Failed to load roles');
+      roles = await response.json();
+    } catch (err) {
+      if (err.message !== 'Authentication required') {
+        console.error('Failed to load roles:', err);
+      }
+      roles = [];
+    }
+  }
+
+  // Load SSO role mappings
+  async function loadSsoMappings() {
+    try {
+      const response = await authFetch('/api/admin/entra-role-assignments');
+      if (!response.ok) throw new Error('Failed to load SSO mappings');
+      ssoMappings = await response.json();
+    } catch (err) {
+      if (err.message !== 'Authentication required') {
+        console.error('Failed to load SSO mappings:', err);
+      }
+      ssoMappings = {};
+    }
+  }
+
   // Load requests
   async function loadRequests() {
     try {
@@ -226,6 +260,8 @@
           toggleEntraSettings();
           toggleUserManagement();
           renderUsers();
+          renderRoles();
+          renderSsoMappings();
         }
         if (panel === 'requests') {
           renderRequests();
@@ -312,6 +348,21 @@
     // Users
     document.getElementById('addUserBtn').addEventListener('click', () => openUserModal());
     document.getElementById('saveUserBtn').addEventListener('click', saveUser);
+
+    // Roles
+    document.getElementById('addRoleBtn').addEventListener('click', addRole);
+    document.getElementById('newRoleName').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); addRole(); }
+    });
+
+    // SSO role mappings
+    document.getElementById('addSsoMappingBtn').addEventListener('click', addSsoMapping);
+    document.getElementById('newSsoEmail').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); addSsoMapping(); }
+    });
+
+    // Category visibility toggle
+    document.getElementById('categoryVisibility').addEventListener('change', updateCategoryRolesVisibility);
 
     // Backup
     document.getElementById('exportConfig').addEventListener('click', exportConfig);
@@ -903,7 +954,7 @@
         <span class="item-drag-handle">☰</span>
         <div class="item-info">
           <div class="item-name">${escapeHtml(cat.name)}</div>
-          <div class="item-meta">${countLinksInCategory(cat.id)} links</div>
+          <div class="item-meta">${countLinksInCategory(cat.id)} links &middot; ${escapeHtml(describeAccess(cat.access))}</div>
         </div>
         <div class="item-actions">
           <button class="btn btn-sm" onclick="editCategory('${cat.id}')">Edit</button>
@@ -920,6 +971,20 @@
     return (appConfig.links || []).filter(l => l.categoryId === categoryId).length;
   }
 
+  // Human-readable summary of a category's access setting
+  function describeAccess(access) {
+    if (!access || !access.visibility || access.visibility === 'public') return 'Public';
+    if (access.visibility === 'authed') return 'Logged-in only';
+    if (access.visibility === 'roles') {
+      const names = (access.roles || []).map(rid => {
+        const r = roles.find(role => role.id === rid);
+        return r ? r.name : rid;
+      });
+      return names.length ? `Roles: ${names.join(', ')}` : 'Roles: (none)';
+    }
+    return 'Public';
+  }
+
   // Open category modal
   window.openCategoryModal = function(categoryId = null) {
     const modal = document.getElementById('categoryModal');
@@ -927,17 +992,25 @@
     const nameInput = document.getElementById('categoryName');
     const idInput = document.getElementById('categoryId');
 
+    const visibilitySelect = document.getElementById('categoryVisibility');
+
     if (categoryId) {
       const category = appConfig.categories.find(c => c.id === categoryId);
       title.textContent = 'Edit Category';
       nameInput.value = category ? category.name : '';
       idInput.value = categoryId;
+      const access = (category && category.access) || { visibility: 'public' };
+      visibilitySelect.value = access.visibility || 'public';
+      renderRoleCheckboxes('categoryRolesCheckboxes', 'categoryRolesEmptyHint', access.roles || []);
     } else {
       title.textContent = 'Add Category';
       nameInput.value = '';
       idInput.value = '';
+      visibilitySelect.value = 'public';
+      renderRoleCheckboxes('categoryRolesCheckboxes', 'categoryRolesEmptyHint', []);
     }
 
+    updateCategoryRolesVisibility();
     modal.classList.add('active');
     nameInput.focus();
   };
@@ -956,19 +1029,27 @@
       return;
     }
 
+    const visibility = document.getElementById('categoryVisibility').value;
+    const access = { visibility };
+    if (visibility === 'roles') {
+      access.roles = getCheckedRoles('categoryRolesCheckboxes');
+    } else {
+      access.roles = [];
+    }
+
     try {
       let response;
       if (id) {
         response = await authFetch(`/api/admin/categories/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name })
+          body: JSON.stringify({ name, access })
         });
       } else {
         response = await authFetch('/api/admin/categories', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name })
+          body: JSON.stringify({ name, access })
         });
       }
 
@@ -1875,11 +1956,16 @@
 
     list.innerHTML = users.map(user => {
       const createdDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '';
+      const roleNames = (user.roles || []).map(rid => {
+        const r = roles.find(role => role.id === rid);
+        return r ? r.name : rid;
+      });
+      const rolesMeta = roleNames.length ? ` &middot; Roles: ${escapeHtml(roleNames.join(', '))}` : '';
       return `
         <li class="item-list-item" data-id="${user.id}">
           <div class="item-info">
             <div class="item-name">${escapeHtml(user.username)}</div>
-            <div class="item-meta">Created: ${createdDate}</div>
+            <div class="item-meta">Created: ${createdDate}${rolesMeta}</div>
           </div>
           <div class="item-actions">
             <button class="btn btn-sm" onclick="editUser('${user.id}')">Edit</button>
@@ -1907,6 +1993,7 @@
       confirmInput.value = '';
       passwordInput.placeholder = 'Leave blank to keep current';
       idInput.value = userId;
+      renderRoleCheckboxes('userRolesCheckboxes', 'userRolesEmptyHint', (user && user.roles) || []);
     } else {
       title.textContent = 'Add User';
       usernameInput.value = '';
@@ -1914,6 +2001,7 @@
       confirmInput.value = '';
       passwordInput.placeholder = 'Enter password';
       idInput.value = '';
+      renderRoleCheckboxes('userRolesCheckboxes', 'userRolesEmptyHint', []);
     }
 
     modal.classList.add('active');
@@ -1951,7 +2039,7 @@
       return;
     }
 
-    const userData = { username };
+    const userData = { username, roles: getCheckedRoles('userRolesCheckboxes') };
     if (password) {
       userData.password = password;
     }
@@ -2007,6 +2095,232 @@
       }
     }
   };
+
+  // ---- Roles management ----
+
+  // Shared helper: render role checkboxes into a container
+  function renderRoleCheckboxes(containerId, emptyHintId, selectedRoleIds = []) {
+    const container = document.getElementById(containerId);
+    const emptyHint = emptyHintId ? document.getElementById(emptyHintId) : null;
+    if (!container) return;
+
+    if (!roles.length) {
+      container.innerHTML = '';
+      if (emptyHint) emptyHint.style.display = 'block';
+      return;
+    }
+    if (emptyHint) emptyHint.style.display = 'none';
+
+    const selected = new Set(selectedRoleIds || []);
+    container.innerHTML = roles.map(role => `
+      <label class="form-checkbox" style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.35rem;">
+        <input type="checkbox" value="${escapeHtml(role.id)}" ${selected.has(role.id) ? 'checked' : ''}>
+        <span>${escapeHtml(role.name)}</span>
+      </label>
+    `).join('');
+  }
+
+  // Shared helper: collect checked role ids from a container
+  function getCheckedRoles(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return [];
+    return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+  }
+
+  function renderRoles() {
+    const list = document.getElementById('roleList');
+    if (!list) return;
+
+    if (!roles.length) {
+      list.innerHTML = '<li class="text-muted text-center">No roles yet. Add a role to enable role-based category access.</li>';
+      return;
+    }
+
+    list.innerHTML = roles.map(role => `
+      <li class="item-list-item" data-id="${role.id}">
+        <div class="item-info">
+          <div class="item-name">${escapeHtml(role.name)}</div>
+          <div class="item-meta">id: ${escapeHtml(role.id)}</div>
+        </div>
+        <div class="item-actions">
+          <button class="btn btn-sm" onclick="editRole('${role.id}')">Rename</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteRole('${role.id}')">Delete</button>
+        </div>
+      </li>
+    `).join('');
+  }
+
+  async function addRole() {
+    const input = document.getElementById('newRoleName');
+    const name = input.value.trim();
+    if (!name) {
+      showToast('Role name is required', true);
+      return;
+    }
+    try {
+      const response = await authFetch('/api/admin/roles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Failed to add role');
+      }
+      input.value = '';
+      await loadRoles();
+      renderRoles();
+      showToast('Role added');
+    } catch (err) {
+      if (err.message !== 'Authentication required') {
+        showToast(err.message || 'Failed to add role', true);
+      }
+    }
+  }
+
+  window.editRole = async function(id) {
+    const role = roles.find(r => r.id === id);
+    const newName = prompt('Rename role', role ? role.name : '');
+    if (newName === null) return;
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      showToast('Role name is required', true);
+      return;
+    }
+    try {
+      const response = await authFetch(`/api/admin/roles/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed })
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Failed to rename role');
+      }
+      await loadRoles();
+      renderRoles();
+      renderUsers();
+      showToast('Role renamed');
+    } catch (err) {
+      if (err.message !== 'Authentication required') {
+        showToast(err.message || 'Failed to rename role', true);
+      }
+    }
+  };
+
+  window.deleteRole = async function(id) {
+    if (!confirm('Delete this role? It will be removed from all categories, users, and SSO mappings.')) return;
+    try {
+      const response = await authFetch(`/api/admin/roles/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete role');
+      await loadRoles();
+      await loadUsers();
+      await loadSsoMappings();
+      await loadConfig();
+      renderRoles();
+      renderUsers();
+      renderSsoMappings();
+      showToast('Role deleted');
+    } catch (err) {
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to delete role', true);
+      }
+    }
+  };
+
+  // ---- SSO role mappings ----
+
+  function renderSsoMappings() {
+    const list = document.getElementById('ssoMappingList');
+    if (!list) return;
+
+    const emails = Object.keys(ssoMappings || {});
+    if (!emails.length) {
+      list.innerHTML = '<li class="text-muted text-center">No SSO role mappings. Add an email above to assign roles to SSO users.</li>';
+      return;
+    }
+
+    list.innerHTML = emails.map(email => {
+      const assigned = ssoMappings[email] || [];
+      const checkboxes = roles.length
+        ? roles.map(role => `
+            <label class="form-checkbox" style="display: inline-flex; align-items: center; gap: 0.3rem; margin-right: 0.75rem;">
+              <input type="checkbox" data-email="${escapeHtml(email)}" value="${escapeHtml(role.id)}" ${assigned.includes(role.id) ? 'checked' : ''} onchange="updateSsoMapping('${encodeURIComponent(email)}')">
+              <span>${escapeHtml(role.name)}</span>
+            </label>`).join('')
+        : '<span class="text-muted" style="font-size: 0.8rem;">No roles defined yet.</span>';
+      return `
+        <li class="item-list-item" data-email="${escapeHtml(email)}" style="flex-direction: column; align-items: stretch;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div class="item-name">${escapeHtml(email)}</div>
+            <button class="btn btn-sm btn-danger" onclick="deleteSsoMapping('${encodeURIComponent(email)}')">Remove</button>
+          </div>
+          <div style="margin-top: 0.5rem;">${checkboxes}</div>
+        </li>
+      `;
+    }).join('');
+  }
+
+  function addSsoMapping() {
+    const input = document.getElementById('newSsoEmail');
+    const email = input.value.trim().toLowerCase();
+    if (!email) {
+      showToast('Email is required', true);
+      return;
+    }
+    if (ssoMappings[email]) {
+      showToast('A mapping for this email already exists', true);
+      return;
+    }
+    ssoMappings[email] = [];
+    input.value = '';
+    renderSsoMappings();
+    saveSsoMappings();
+  }
+
+  window.updateSsoMapping = function(encodedEmail) {
+    const email = decodeURIComponent(encodedEmail);
+    const checked = Array.from(
+      document.querySelectorAll(`#ssoMappingList input[type="checkbox"][data-email="${cssEscape(email)}"]:checked`)
+    ).map(cb => cb.value);
+    ssoMappings[email] = checked;
+    saveSsoMappings();
+  };
+
+  window.deleteSsoMapping = function(encodedEmail) {
+    const email = decodeURIComponent(encodedEmail);
+    delete ssoMappings[email];
+    renderSsoMappings();
+    saveSsoMappings();
+  };
+
+  // Attribute-selector-safe escaping for email values
+  function cssEscape(value) {
+    if (window.CSS && CSS.escape) return CSS.escape(value);
+    return String(value).replace(/["\\]/g, '\\$&');
+  }
+
+  async function saveSsoMappings() {
+    try {
+      const response = await authFetch('/api/admin/entra-role-assignments', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ssoMappings)
+      });
+      if (!response.ok) throw new Error('Failed to save SSO mappings');
+      ssoMappings = await response.json();
+    } catch (err) {
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to save SSO mappings', true);
+      }
+    }
+  }
+
+  // Toggle category roles checkbox group visibility based on selected visibility
+  function updateCategoryRolesVisibility() {
+    const visibility = document.getElementById('categoryVisibility').value;
+    document.getElementById('categoryRolesGroup').style.display = visibility === 'roles' ? 'block' : 'none';
+  }
 
   // Close modal helper
   window.closeModal = function(modalId) {
