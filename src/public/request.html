@@ -283,6 +283,13 @@
             <p class="form-hint">Comma-separated list of tags</p>
           </div>
           <div class="form-group">
+            <label class="form-label" for="link-icon-file">Icon (optional)</label>
+            <input type="file" id="link-icon-file" class="form-input" accept="image/*">
+            <p class="form-hint">Upload an image to use as this link's icon. Leave blank to auto-detect.</p>
+            <span id="link-icon-preview" style="display:inline-flex; margin-top:6px;"></span>
+            <input type="hidden" id="link-custom-icon" value="">
+          </div>
+          <div class="form-group">
             <label class="form-label" for="link-submitter">Your Name (optional)</label>
             <input type="text" id="link-submitter" class="form-input" placeholder="Anonymous">
           </div>
@@ -555,10 +562,25 @@
       const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
 
       try {
+        // If the user attached an icon, upload it first and carry the URL through.
+        let customIcon = null;
+        const iconInput = document.getElementById('link-icon-file');
+        const iconFile = iconInput && iconInput.files && iconInput.files[0];
+        if (iconFile) {
+          const fd = new FormData();
+          fd.append('file', iconFile);
+          const iconRes = await fetch('/api/public/upload/icon', { method: 'POST', body: fd });
+          const iconResult = await iconRes.json();
+          if (!iconRes.ok) {
+            throw new Error(iconResult.error || 'Icon upload failed');
+          }
+          customIcon = iconResult.url;
+        }
+
         const response = await fetch('/api/public/request/link', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, url, categoryId, pendingCategoryId, tags, submittedBy })
+          body: JSON.stringify({ name, url, categoryId, pendingCategoryId, tags, submittedBy, customIcon })
         });
 
         const result = await response.json();
@@ -573,11 +595,24 @@
 
         showMessage('link-message', 'Link request submitted successfully!');
         document.getElementById('link-form').reset();
+        document.getElementById('link-icon-preview').innerHTML = '';
       } catch (err) {
         showMessage('link-message', err.message, true);
       } finally {
         submitBtn.disabled = false;
       }
+    });
+
+    // Show a small preview of the chosen icon file before upload
+    document.getElementById('link-icon-file').addEventListener('change', (e) => {
+      const preview = document.getElementById('link-icon-preview');
+      const file = e.target.files && e.target.files[0];
+      if (!file) { preview.innerHTML = ''; return; }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        preview.innerHTML = `<img src="${ev.target.result}" alt="icon preview" style="width:28px;height:28px;object-fit:contain;border-radius:4px;background:rgba(255,255,255,0.08);padding:2px;">`;
+      };
+      reader.readAsDataURL(file);
     });
 
     // Initialize

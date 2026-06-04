@@ -811,8 +811,15 @@
           <input type="text" class="form-input" id="linkTags" placeholder="tag1, tag2, tag3">
         </div>
         <div class="form-group">
-          <label class="form-label">Custom Icon URL (optional)</label>
-          <input type="text" class="form-input" id="linkCustomIcon" placeholder="https://example.com/icon.png">
+          <label class="form-label">Custom Icon (optional)</label>
+          <input type="text" class="form-input" id="linkCustomIcon" placeholder="https://example.com/icon.png or /uploads/icon.png" oninput="updateLinkIconPreview()">
+          <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <input type="file" id="linkIconFile" accept="image/*" style="display:none" onchange="handleLinkIconUpload(this.files[0]); this.value='';">
+            <button type="button" class="btn btn-sm" onclick="document.getElementById('linkIconFile').click()">Upload Icon</button>
+            <button type="button" class="btn btn-sm btn-danger" id="linkIconClearBtn" onclick="clearLinkIcon()" style="display:none">Remove</button>
+            <span id="linkIconPreview" style="display:flex; align-items:center;"></span>
+          </div>
+          <small style="color: var(--text-muted, #888); display:block; margin-top:4px;">Leave blank to auto-detect a favicon (falls back to a bundled offline icon).</small>
         </div>
         <div class="form-group">
           <label class="form-label">Open Behavior</label>
