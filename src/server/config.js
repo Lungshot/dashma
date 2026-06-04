@@ -814,6 +814,29 @@ function getPendingCategoryRequests() {
   return config.requests.categories.filter(r => r.status === 'pending');
 }
 
+// Look up the public-safe status of requests by id. Returns only
+// { id, type, status } for each id found in either categories or links.
+// Intentionally does NOT leak submitter or any other request fields.
+function getRequestStatusByIds(ids) {
+  const config = getConfig();
+  if (!config.requests || !Array.isArray(ids)) return [];
+  const wanted = new Set(ids);
+  const results = [];
+
+  (config.requests.categories || []).forEach(r => {
+    if (wanted.has(r.id)) {
+      results.push({ id: r.id, type: 'category', status: r.status });
+    }
+  });
+  (config.requests.links || []).forEach(r => {
+    if (wanted.has(r.id)) {
+      results.push({ id: r.id, type: 'link', status: r.status });
+    }
+  });
+
+  return results;
+}
+
 module.exports = {
   loadConfig,
   getConfig,
@@ -859,6 +882,7 @@ module.exports = {
   denyRequest,
   deleteRequest,
   getPendingCategoryRequests,
+  getRequestStatusByIds,
   // Widget management
   getWidgets,
   addWidget,

@@ -907,6 +907,19 @@ async function registerRoutes(fastify) {
     };
   });
 
+  // Public status lookup for a user's own submitted requests (no auth).
+  // Accepts ?ids=<comma-separated ids> and returns only [{ id, type, status }].
+  // Does not expose submitter or any other request details.
+  fastify.get('/api/public/request/status', async (request) => {
+    const raw = (request.query && request.query.ids) || '';
+    const ids = String(raw)
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+    if (ids.length === 0) return [];
+    return config.getRequestStatusByIds(ids);
+  });
+
   fastify.post('/api/public/request/category', async (request, reply) => {
     const { name, submittedBy } = request.body;
     if (!name || !name.trim()) {

@@ -2347,6 +2347,14 @@
     return div.innerHTML;
   }
 
+  // Format an ISO timestamp into a readable local date + time
+  function formatRequestDate(iso) {
+    if (!iso) return 'unknown';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return 'unknown';
+    return d.toLocaleString();
+  }
+
   // Convert rgba to hex for color picker (approximate)
   function rgbaToHex(rgba) {
     if (!rgba) return '#ffffff';
@@ -2395,7 +2403,7 @@
     }
 
     list.innerHTML = categoryRequests.map(req => {
-      const date = new Date(req.submittedAt).toLocaleDateString();
+      const date = formatRequestDate(req.submittedAt);
       const statusClass = req.status === 'approved' ? 'status-approved' : req.status === 'denied' ? 'status-denied' : 'status-pending';
 
       let actions = '';
@@ -2410,6 +2418,12 @@
         `;
       }
 
+      let reviewMeta = '';
+      if (req.status !== 'pending' && req.reviewedAt) {
+        const verb = req.status === 'approved' ? 'Approved' : 'Denied';
+        reviewMeta = `<div class="item-meta">${verb}: ${formatRequestDate(req.reviewedAt)} by ${escapeHtml(req.reviewedBy || 'admin')}</div>`;
+      }
+
       return `
         <li class="item-list-item">
           <div class="item-info">
@@ -2418,6 +2432,7 @@
               <span class="request-status ${statusClass}">${req.status}</span>
               Submitted: ${date} by ${escapeHtml(req.submittedBy || 'anonymous')}
             </div>
+            ${reviewMeta}
           </div>
           <div class="item-actions">
             ${actions}
@@ -2442,7 +2457,7 @@
     }
 
     list.innerHTML = linkRequests.map(req => {
-      const date = new Date(req.submittedAt).toLocaleDateString();
+      const date = formatRequestDate(req.submittedAt);
       const statusClass = req.status === 'approved' ? 'status-approved' : req.status === 'denied' ? 'status-denied' : 'status-pending';
 
       // Get category name
@@ -2486,6 +2501,7 @@
               ${escapeHtml(req.url)} | ${escapeHtml(categoryName)}${tags ? ' | ' + escapeHtml(tags) : ''}
             </div>
             <div class="item-meta">Submitted: ${date} by ${escapeHtml(req.submittedBy || 'anonymous')}</div>
+            ${req.status !== 'pending' && req.reviewedAt ? `<div class="item-meta">${req.status === 'approved' ? 'Approved' : 'Denied'}: ${formatRequestDate(req.reviewedAt)} by ${escapeHtml(req.reviewedBy || 'admin')}</div>` : ''}
           </div>
           <div class="item-actions">
             ${actions}
