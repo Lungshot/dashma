@@ -103,15 +103,23 @@
 
   // Initialize
   async function init() {
+    setupNavigation();
+    populateThemeDropdown();
+    setupEventListeners();
+    await refreshAllPanels();
+  }
+
+  // Reload every config-backed data source and re-render all panels. Used on first
+  // load and after a config import, so the two never drift out of sync. Each load is
+  // awaited before the renders so panels never show stale data. Does not include the
+  // one-time DOM setup (navigation, theme dropdown, event listeners).
+  async function refreshAllPanels() {
     await loadConfig();
     await loadUsers();
     await loadRoles();
     await loadSsoMappings();
     await loadSsoUsers();
     await loadRequests();
-    setupNavigation();
-    populateThemeDropdown();
-    setupEventListeners();
     populateForm();
     renderCategories();
     renderLinks();
@@ -1963,23 +1971,10 @@
 
       if (!response.ok) throw new Error('Import failed');
 
-      // Reload all config-backed state and re-render every panel the backup restores,
-      // awaiting each load before its render (mirrors the init() sequence).
-      await loadConfig();
-      await loadUsers();
-      await loadRoles();
-      await loadSsoMappings();
-      await loadSsoUsers();
-
-      populateForm(); // also refreshes the admin allowlist via loadAdminAllowlist()
-      renderCategories();
-      renderLinks();
-      renderWidgets();
-      renderUsers();
-      renderRoles();
-      renderSsoMappings();
-      renderSsoRoleSelect();
-      renderSsoUserChecklist();
+      // Reload all config-backed state and re-render every panel the backup restores
+      // (shared with init() so the two never drift). populateForm() inside also
+      // refreshes the admin allowlist via loadAdminAllowlist().
+      await refreshAllPanels();
 
       const authChanged =
         appConfig?.settings?.authMode !== prevAuthMode ||
