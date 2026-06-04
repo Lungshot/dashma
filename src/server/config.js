@@ -3,7 +3,7 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 
-const CONFIG_PATH = path.join(__dirname, '..', 'data', 'config.json');
+const CONFIG_PATH = process.env.DASHMA_CONFIG_PATH || path.join(__dirname, '..', 'data', 'config.json');
 
 const defaultConfig = {
   settings: {
@@ -686,41 +686,62 @@ function getVisibleData(session) {
 }
 
 // Export/Import
+//
+// A backup round-trips a full instance into a new one. exportConfig emits the
+// whole config except the transient request queue, tagged with a version marker.
+// This deliberately includes auth mode, the Entra/SSO connection block (incl.
+// clientSecret), roles, role mappings, regular users (with password hashes),
+// the seen-SSO-user list, and widgets — everything a clone needs to behave the
+// same. The export file therefore contains secrets and credential hashes; the
+// admin UI and README warn that it must be stored securely.
 function exportConfig() {
   const config = getConfig();
 
-  // Create a copy of settings without auth-related fields
-  const { authMode, mainAuthMode, entraId, ...appearanceSettings } = config.settings;
-
-  // Return only Appearance, Categories, Links, and Account settings
-  // Excludes: authMode, mainAuthMode, entraId, users, requests
   return {
-    settings: appearanceSettings,
+    exportVersion: 2,
+    settings: config.settings,
+    admin: config.admin,
+    users: config.users || [],
+    ssoUsers: config.ssoUsers || [],
     categories: config.categories,
     links: config.links,
-    admin: config.admin
+    widgets: config.widgets || []
+    // requests intentionally omitted — transient approval-queue state stays instance-local
   };
 }
 
+// Restore a backup into this instance with replace semantics: any section present
+// in the file overwrites the current value wholesale. Backward-compatible with v1
+// backups that lack the new sections — absent sections fall back to current, so an
+// old appearance-only export does not blank a configured instance's auth or users.
 function importConfig(newConfig) {
+  if (!newConfig || typeof newConfig !== 'object') {
+    throw new Error('Invalid config file');
+  }
+
   const currentConfig = getConfig();
+  const has = (key) => Object.prototype.hasOwnProperty.call(newConfig, key);
 
-  // Preserve auth settings if not in imported config
-  const mergedSettings = {
-    ...newConfig.settings,
-    authMode: newConfig.settings?.authMode || currentConfig.settings.authMode,
-    mainAuthMode: newConfig.settings?.mainAuthMode || currentConfig.settings.mainAuthMode,
-    entraId: newConfig.settings?.entraId || currentConfig.settings.entraId
-  };
+  // settings is shallow-MERGED (file wins) rather than replaced, so a v1 file whose
+  // settings lacks authMode/mainAuthMode/entraId does not wipe those keys on the target.
+  // Note the file spread comes last — the reverse of the legacy code, where current
+  // values would otherwise mask the imported ones. Nested objects (entraId,
+  // entraRoleAssignments) replace wholesale when the file supplies them.
+  const mergedSettings = { ...currentConfig.settings, ...(newConfig.settings || {}) };
 
-  // Merge imported config with preserved auth settings
+  // Every other section uses a uniform presence check: present in the file -> replace
+  // (an explicit empty array like users: [] counts as present and clears the section);
+  // absent -> keep current. requests is never imported.
   configCache = {
     ...currentConfig,
     settings: mergedSettings,
-    categories: newConfig.categories || currentConfig.categories,
-    links: newConfig.links || currentConfig.links,
-    admin: newConfig.admin || currentConfig.admin
-    // users and requests are preserved from current config
+    admin: has('admin') ? newConfig.admin : currentConfig.admin,
+    users: has('users') ? newConfig.users : currentConfig.users,
+    ssoUsers: has('ssoUsers') ? newConfig.ssoUsers : currentConfig.ssoUsers,
+    categories: has('categories') ? newConfig.categories : currentConfig.categories,
+    links: has('links') ? newConfig.links : currentConfig.links,
+    widgets: has('widgets') ? newConfig.widgets : currentConfig.widgets,
+    requests: currentConfig.requests
   };
 
   saveConfig();
