@@ -1940,21 +1940,55 @@
   async function handleConfigImport(file) {
     try {
       const text = await file.text();
-      const config = JSON.parse(text);
+      const imported = JSON.parse(text);
+
+      // Import is a destructive restore: it replaces admin credentials, auth mode,
+      // the SSO connection, users, roles, categories, links, and widgets. Confirm
+      // before overwriting (matches the native-confirm pattern used for deletes).
+      if (!confirm('Import this configuration? This replaces the current admin credentials, authentication mode, SSO connection, users, roles, categories, links, and widgets on this instance. This cannot be undone.')) {
+        return;
+      }
+
+      // Snapshot auth-relevant fields so the re-login note fires only when the import
+      // actually changes them (an appearance-only import stays quiet).
+      const prevAuthMode = appConfig?.settings?.authMode;
+      const prevMainAuthMode = appConfig?.settings?.mainAuthMode;
+      const prevAdminUsername = appConfig?.admin?.username;
 
       const response = await authFetch('/api/admin/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
+        body: JSON.stringify(imported)
       });
 
       if (!response.ok) throw new Error('Import failed');
 
+      // Reload all config-backed state and re-render every panel the backup restores,
+      // awaiting each load before its render (mirrors the init() sequence).
       await loadConfig();
-      populateForm();
+      await loadUsers();
+      await loadRoles();
+      await loadSsoMappings();
+      await loadSsoUsers();
+
+      populateForm(); // also refreshes the admin allowlist via loadAdminAllowlist()
       renderCategories();
       renderLinks();
-      showToast('Config imported successfully');
+      renderWidgets();
+      renderUsers();
+      renderRoles();
+      renderSsoMappings();
+      renderSsoRoleSelect();
+      renderSsoUserChecklist();
+
+      const authChanged =
+        appConfig?.settings?.authMode !== prevAuthMode ||
+        appConfig?.settings?.mainAuthMode !== prevMainAuthMode ||
+        appConfig?.admin?.username !== prevAdminUsername;
+
+      showToast(authChanged
+        ? 'Config imported. Authentication changed — you may need to sign in again.'
+        : 'Config imported successfully');
     } catch (err) {
       if (err.message !== 'Authentication required') {
         showToast('Failed to import config', true);
