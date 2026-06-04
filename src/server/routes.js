@@ -343,6 +343,7 @@ async function registerRoutes(fastify) {
       request.session.username = result.account.username;
       request.session.entraUser = true;
       request.session.roles = config.getRolesForEmail(result.account.username);
+      config.recordSsoUser(result.account.username, result.account.name);
       const redirect = request.session.loginRedirect || '/';
       delete request.session.loginRedirect;
       return reply.redirect(redirect);
@@ -365,6 +366,7 @@ async function registerRoutes(fastify) {
       delete request.session.adminLoginAttempt;
 
       const userEmail = result.account.username; // In Entra ID, username is typically the email/UPN
+      config.recordSsoUser(userEmail, result.account.name);
 
       if (isAdminLogin) {
         // Check if user is in the admin allowlist
@@ -483,6 +485,7 @@ async function registerRoutes(fastify) {
       request.session.username = result.account.username;
       request.session.entraUser = true;
       request.session.roles = [];
+      config.recordSsoUser(result.account.username, result.account.name);
       return reply.redirect('/admin');
     }
 
@@ -763,6 +766,22 @@ async function registerRoutes(fastify) {
     fastify.put('/api/admin/entra-role-assignments', async (request, reply) => {
       try {
         return config.setEntraRoleAssignments(request.body || {});
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
+    });
+
+    // SSO users seen at sign-in (for picking instead of typing emails) (admin)
+    fastify.get('/api/admin/sso-users', async () => {
+      return config.getSsoUsers();
+    });
+
+    // Set which categories a role can access, from the Roles section (admin)
+    fastify.put('/api/admin/roles/:id/categories', async (request, reply) => {
+      try {
+        const categoryIds = (request.body && request.body.categoryIds) || [];
+        config.setRoleCategories(request.params.id, categoryIds);
+        return { success: true };
       } catch (err) {
         return reply.code(400).send({ error: err.message });
       }

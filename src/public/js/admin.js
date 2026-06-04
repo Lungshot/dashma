@@ -7,6 +7,7 @@
   let users = [];
   let roles = [];
   let ssoMappings = {}; // { email: [roleId...] }
+  let ssoUsers = []; // [{ email, name, firstSeen, lastSeen }] seen at SSO sign-in
   let requests = { categories: [], links: [] };
 
   // Auto-save debounce timer
@@ -106,6 +107,7 @@
     await loadUsers();
     await loadRoles();
     await loadSsoMappings();
+    await loadSsoUsers();
     await loadRequests();
     setupNavigation();
     populateThemeDropdown();
@@ -117,6 +119,8 @@
     renderUsers();
     renderRoles();
     renderSsoMappings();
+    renderSsoRoleSelect();
+    renderSsoUserChecklist();
     renderRequests();
     updateRequestsBadge();
   }
@@ -229,6 +233,20 @@
         console.error('Failed to load SSO mappings:', err);
       }
       ssoMappings = {};
+    }
+  }
+
+  // Load SSO users seen at sign-in
+  async function loadSsoUsers() {
+    try {
+      const response = await authFetch('/api/admin/sso-users');
+      if (!response.ok) throw new Error('Failed to load SSO users');
+      ssoUsers = await response.json();
+    } catch (err) {
+      if (err.message !== 'Authentication required') {
+        console.error('Failed to load SSO users:', err);
+      }
+      ssoUsers = [];
     }
   }
 
@@ -360,6 +378,8 @@
     document.getElementById('newSsoEmail').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); addSsoMapping(); }
     });
+    const ssoRoleSelect = document.getElementById('ssoRoleSelect');
+    if (ssoRoleSelect) ssoRoleSelect.addEventListener('change', renderSsoUserChecklist);
 
     // Category visibility toggle
     document.getElementById('categoryVisibility').addEventListener('change', updateCategoryRolesVisibility);
@@ -2183,18 +2203,89 @@
     }
 
     list.innerHTML = roles.map(role => `
-      <li class="item-list-item" data-id="${role.id}">
-        <div class="item-info">
-          <div class="item-name">${escapeHtml(role.name)}</div>
-          <div class="item-meta">id: ${escapeHtml(role.id)}</div>
+      <li class="item-list-item" data-id="${role.id}" style="flex-direction: column; align-items: stretch;">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div class="item-info">
+            <div class="item-name">${escapeHtml(role.name)}</div>
+            <div class="item-meta">id: ${escapeHtml(role.id)}</div>
+          </div>
+          <div class="item-actions">
+            <button class="btn btn-sm" onclick="toggleRoleCategories('${role.id}')">Categories</button>
+            <button class="btn btn-sm" onclick="editRole('${role.id}')">Rename</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteRole('${role.id}')">Delete</button>
+          </div>
         </div>
-        <div class="item-actions">
-          <button class="btn btn-sm" onclick="editRole('${role.id}')">Rename</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteRole('${role.id}')">Delete</button>
-        </div>
+        <div class="role-categories-panel" id="roleCats-${role.id}" style="display: none; margin-top: 0.6rem; width: 100%;"></div>
       </li>
     `).join('');
   }
+
+  // Expand/collapse the per-role category access editor.
+  window.toggleRoleCategories = function(roleId) {
+    const panel = document.getElementById(`roleCats-${roleId}`);
+    if (!panel) return;
+    if (panel.style.display === 'none') {
+      renderRoleCategories(roleId, panel);
+      panel.style.display = 'block';
+    } else {
+      panel.style.display = 'none';
+    }
+  };
+
+  // Render the category checklist for a role: checked = this role can access the category.
+  function renderRoleCategories(roleId, panel) {
+    const categories = (appConfig.categories || []).slice().sort((a, b) => a.order - b.order);
+    if (!categories.length) {
+      panel.innerHTML = '<p class="text-muted" style="font-size: 0.8rem;">No categories yet. Add categories in the Categories panel first.</p>';
+      return;
+    }
+
+    const rows = categories.map(cat => {
+      const access = cat.access || { visibility: 'public', roles: [] };
+      const checked = access.visibility === 'roles' && (access.roles || []).includes(roleId);
+      const visLabel = access.visibility === 'roles'
+        ? 'roles'
+        : (access.visibility === 'authed' ? 'logged-in only' : 'public');
+      return `
+        <label class="form-checkbox" style="display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.3rem;">
+          <input type="checkbox" value="${escapeHtml(cat.id)}" ${checked ? 'checked' : ''}>
+          <span>${escapeHtml(cat.name)} <span class="text-muted" style="font-size: 0.72rem;">(${visLabel})</span></span>
+        </label>`;
+    }).join('');
+
+    panel.innerHTML = `
+      <p class="text-muted" style="font-size: 0.78rem; margin: 0 0 0.5rem;">Check the categories this role can access. Checking a <strong>public</strong> or <strong>logged-in</strong> category restricts it to roles.</p>
+      ${rows}
+      <div style="margin-top: 0.5rem;">
+        <button class="btn btn-sm btn-primary" onclick="saveRoleCategories('${roleId}')">Save categories</button>
+      </div>`;
+  }
+
+  // Persist the role's category access from the checklist.
+  window.saveRoleCategories = async function(roleId) {
+    const panel = document.getElementById(`roleCats-${roleId}`);
+    if (!panel) return;
+    const categoryIds = Array.from(panel.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+    try {
+      const response = await authFetch(`/api/admin/roles/${roleId}/categories`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categoryIds })
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Failed to save category access');
+      }
+      await loadConfig();
+      renderCategories();
+      renderRoleCategories(roleId, panel);
+      showToast('Category access updated');
+    } catch (err) {
+      if (err.message !== 'Authentication required') {
+        showToast(err.message || 'Failed to save category access', true);
+      }
+    }
+  };
 
   async function addRole() {
     const input = document.getElementById('newRoleName');
@@ -2216,6 +2307,8 @@
       input.value = '';
       await loadRoles();
       renderRoles();
+      renderSsoRoleSelect();
+      renderSsoUserChecklist();
       showToast('Role added');
     } catch (err) {
       if (err.message !== 'Authentication required') {
@@ -2246,6 +2339,8 @@
       await loadRoles();
       renderRoles();
       renderUsers();
+      renderSsoRoleSelect();
+      renderSsoUserChecklist();
       showToast('Role renamed');
     } catch (err) {
       if (err.message !== 'Authentication required') {
@@ -2266,6 +2361,8 @@
       renderRoles();
       renderUsers();
       renderSsoMappings();
+      renderSsoRoleSelect();
+      renderSsoUserChecklist();
       showToast('Role deleted');
     } catch (err) {
       if (err.message !== 'Authentication required') {
@@ -2307,6 +2404,88 @@
     }).join('');
   }
 
+  // Populate the role <select> in the SSO Role Mapping card, preserving selection.
+  function renderSsoRoleSelect() {
+    const select = document.getElementById('ssoRoleSelect');
+    if (!select) return;
+    const previous = select.value;
+
+    if (!roles.length) {
+      select.innerHTML = '<option value="">No roles defined yet — add a role above</option>';
+      select.disabled = true;
+      return;
+    }
+    select.disabled = false;
+    select.innerHTML = roles.map(role =>
+      `<option value="${escapeHtml(role.id)}">${escapeHtml(role.name)}</option>`
+    ).join('');
+
+    // Keep the previous selection if it still exists, else default to the first role
+    if (previous && roles.some(r => r.id === previous)) {
+      select.value = previous;
+    }
+  }
+
+  // Render the checklist of known SSO users for the currently selected role.
+  function renderSsoUserChecklist() {
+    const container = document.getElementById('ssoUserChecklist');
+    if (!container) return;
+
+    const select = document.getElementById('ssoRoleSelect');
+    const roleId = select ? select.value : '';
+
+    if (!roles.length || !roleId) {
+      container.innerHTML = '<p class="text-muted" style="font-size: 0.8rem;">Define a role above to start assigning SSO users.</p>';
+      return;
+    }
+
+    // Combine users seen at sign-in with any emails that already have a mapping
+    // (e.g. added manually before their first sign-in), most-recent first.
+    const byEmail = new Map();
+    ssoUsers.forEach(u => {
+      if (u && u.email) byEmail.set(u.email.toLowerCase(), { email: u.email.toLowerCase(), name: u.name || '', lastSeen: u.lastSeen || '' });
+    });
+    Object.keys(ssoMappings || {}).forEach(email => {
+      const key = email.toLowerCase();
+      if (!byEmail.has(key)) byEmail.set(key, { email: key, name: '', lastSeen: '' });
+    });
+
+    const list = Array.from(byEmail.values());
+    if (!list.length) {
+      container.innerHTML = '<p class="text-muted" style="font-size: 0.8rem;">No SSO users yet. Users appear here after their first SSO sign-in, or add one by email below.</p>';
+      return;
+    }
+
+    container.innerHTML = list.map(u => {
+      const assigned = (ssoMappings[u.email] || []).includes(roleId);
+      const seen = u.lastSeen ? ` <span class="text-muted" style="font-size: 0.72rem;">· last seen ${escapeHtml(formatRequestDate(u.lastSeen))}</span>` : '';
+      const label = u.name ? `${escapeHtml(u.name)} <span class="text-muted" style="font-size: 0.78rem;">&lt;${escapeHtml(u.email)}&gt;</span>` : escapeHtml(u.email);
+      return `
+        <label class="form-checkbox" style="display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.35rem;">
+          <input type="checkbox" value="${escapeHtml(u.email)}" ${assigned ? 'checked' : ''} onchange="toggleSsoUserRole('${encodeURIComponent(u.email)}')">
+          <span>${label}${seen}</span>
+        </label>`;
+    }).join('');
+  }
+
+  // Toggle the selected role on/off for a given SSO user, then save.
+  window.toggleSsoUserRole = function(encodedEmail) {
+    const email = decodeURIComponent(encodedEmail).toLowerCase();
+    const select = document.getElementById('ssoRoleSelect');
+    const roleId = select ? select.value : '';
+    if (!roleId) return;
+
+    const checkbox = document.querySelector(`#ssoUserChecklist input[type="checkbox"][value="${cssEscape(email)}"]`);
+    const checked = checkbox ? checkbox.checked : false;
+
+    const current = new Set(ssoMappings[email] || []);
+    if (checked) current.add(roleId); else current.delete(roleId);
+    ssoMappings[email] = Array.from(current);
+
+    saveSsoMappings();
+    renderSsoMappings();
+  };
+
   function addSsoMapping() {
     const input = document.getElementById('newSsoEmail');
     const email = input.value.trim().toLowerCase();
@@ -2314,14 +2493,14 @@
       showToast('Email is required', true);
       return;
     }
-    if (ssoMappings[email]) {
-      showToast('A mapping for this email already exists', true);
-      return;
+    if (!ssoMappings[email]) {
+      ssoMappings[email] = [];
     }
-    ssoMappings[email] = [];
     input.value = '';
     renderSsoMappings();
+    renderSsoUserChecklist();
     saveSsoMappings();
+    showToast('User added — check a role to assign it');
   }
 
   window.updateSsoMapping = function(encodedEmail) {
@@ -2331,12 +2510,14 @@
     ).map(cb => cb.value);
     ssoMappings[email] = checked;
     saveSsoMappings();
+    renderSsoUserChecklist();
   };
 
   window.deleteSsoMapping = function(encodedEmail) {
     const email = decodeURIComponent(encodedEmail);
     delete ssoMappings[email];
     renderSsoMappings();
+    renderSsoUserChecklist();
     saveSsoMappings();
   };
 

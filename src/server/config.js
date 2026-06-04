@@ -54,6 +54,7 @@ const defaultConfig = {
     mustChangePassword: true
   },
   users: [], // Regular users for main site auth: { id, username, passwordHash, createdAt }
+  ssoUsers: [], // SSO/Entra users seen at sign-in (for role mapping without typing emails): { email, name, firstSeen, lastSeen }
   categories: [],
   links: [],
   widgets: [], // { id, type, enabled, position, order, title, config }
@@ -585,6 +586,68 @@ function getRolesForEmail(email) {
   return [];
 }
 
+// Record an SSO/Entra user that has signed in, so admins can assign roles
+// by picking from a list instead of typing email addresses.
+function recordSsoUser(email, name) {
+  if (!email) return;
+  const config = getConfig();
+  if (!Array.isArray(config.ssoUsers)) config.ssoUsers = [];
+  const normalized = String(email).toLowerCase().trim();
+  if (!normalized) return;
+
+  const now = new Date().toISOString();
+  const existing = config.ssoUsers.find(u => u.email === normalized);
+  if (existing) {
+    existing.lastSeen = now;
+    if (name) existing.name = name;
+  } else {
+    config.ssoUsers.push({ email: normalized, name: name || '', firstSeen: now, lastSeen: now });
+  }
+  saveConfig();
+}
+
+// List SSO users that have signed in, most recently seen first.
+function getSsoUsers() {
+  const config = getConfig();
+  if (!Array.isArray(config.ssoUsers)) {
+    config.ssoUsers = [];
+    saveConfig();
+  }
+  return [...config.ssoUsers].sort((a, b) => String(b.lastSeen || '').localeCompare(String(a.lastSeen || '')));
+}
+
+// Role-centric category access editor: set exactly which categories a role can access.
+// Categories in `categoryIds` become visibility:'roles' and include the role; categories
+// that previously granted this role but are no longer checked have the role removed.
+function setRoleCategories(roleId, categoryIds) {
+  const config = getConfig();
+  const role = (config.settings.roles || []).find(r => r.id === roleId);
+  if (!role) throw new Error('Role not found');
+
+  const wanted = new Set(Array.isArray(categoryIds) ? categoryIds : []);
+
+  (config.categories || []).forEach(cat => {
+    const access = (cat.access && typeof cat.access === 'object')
+      ? cat.access
+      : { visibility: 'public', roles: [] };
+    const roles = Array.isArray(access.roles) ? access.roles : [];
+    const hasRole = roles.includes(roleId);
+
+    if (wanted.has(cat.id)) {
+      access.visibility = 'roles';
+      if (!hasRole) roles.push(roleId);
+      access.roles = roles;
+      cat.access = access;
+    } else if (hasRole) {
+      access.roles = roles.filter(rid => rid !== roleId);
+      cat.access = access;
+    }
+  });
+
+  saveConfig();
+  return config.categories;
+}
+
 // Filter categories and links for a viewer based on category access rules
 function getVisibleData(session) {
   const categories = getCategories();
@@ -872,6 +935,9 @@ module.exports = {
   getEntraRoleAssignments,
   setEntraRoleAssignments,
   getRolesForEmail,
+  recordSsoUser,
+  getSsoUsers,
+  setRoleCategories,
   getVisibleData,
   exportConfig,
   importConfig,
