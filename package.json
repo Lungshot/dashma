@@ -1,11 +1,12 @@
 {
   "name": "dashma",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "A minimal, zen-inspired link dashboard homepage",
   "main": "src/server/index.js",
   "scripts": {
     "start": "node src/server/index.js",
-    "dev": "node --watch src/server/index.js"
+    "dev": "node --watch src/server/index.js",
+    "test": "node --test"
   },
   "keywords": [
     "dashboard",
