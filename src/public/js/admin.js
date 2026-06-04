@@ -712,6 +712,50 @@
     }
   }
 
+  // ---- Link custom icon upload / preview ----
+
+  // Reflect the current linkCustomIcon value in the modal preview + remove button
+  window.updateLinkIconPreview = function() {
+    const val = (document.getElementById('linkCustomIcon').value || '').trim();
+    const preview = document.getElementById('linkIconPreview');
+    const clearBtn = document.getElementById('linkIconClearBtn');
+    if (val) {
+      preview.innerHTML = `<img src="${val}" alt="icon preview" style="width:28px;height:28px;object-fit:contain;border-radius:4px;background:rgba(255,255,255,0.08);padding:2px;" onerror="this.style.display='none'">`;
+      if (clearBtn) clearBtn.style.display = '';
+    } else {
+      preview.innerHTML = '';
+      if (clearBtn) clearBtn.style.display = 'none';
+    }
+  };
+
+  // Upload a custom icon file to the existing admin endpoint, store the returned URL
+  window.handleLinkIconUpload = async function(file) {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const response = await authFetch('/api/admin/upload/icon', {
+        method: 'POST',
+        body: formData
+      });
+      if (!response.ok) throw new Error('Upload failed');
+      const result = await response.json();
+      document.getElementById('linkCustomIcon').value = result.url;
+      updateLinkIconPreview();
+      showToast('Icon uploaded');
+    } catch (err) {
+      if (err.message !== 'Authentication required') {
+        showToast('Failed to upload icon', true);
+      }
+    }
+  };
+
+  // Clear back to auto-favicon
+  window.clearLinkIcon = function() {
+    document.getElementById('linkCustomIcon').value = '';
+    updateLinkIconPreview();
+  };
+
   // Clear background image
   async function clearBgImage() {
     try {
@@ -1143,6 +1187,7 @@
       document.getElementById('linkCategory').value = link ? link.categoryId : '';
       document.getElementById('linkTags').value = link && link.tags ? link.tags.join(', ') : '';
       document.getElementById('linkCustomIcon').value = link ? link.customIcon || '' : '';
+      updateLinkIconPreview();
       document.getElementById('linkOpenBehaviorModal').value = link ? link.openBehavior || '' : '';
 
       // Monitoring fields
@@ -1161,6 +1206,7 @@
       document.getElementById('linkCategory').value = defaultCategory;
       document.getElementById('linkTags').value = '';
       document.getElementById('linkCustomIcon').value = '';
+      updateLinkIconPreview();
       document.getElementById('linkOpenBehaviorModal').value = '';
 
       // Reset monitoring fields

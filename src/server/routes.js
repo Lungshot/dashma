@@ -77,8 +77,87 @@ function getAppNameVariants(appName) {
   return variants;
 }
 
+// Allowed image extensions / mime types for uploaded icons
+const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.bmp'];
+const IMAGE_MIME_PREFIXES = ['image/'];
+
+function isImageUpload(filename, mimetype) {
+  const ext = (path.extname(filename || '')).toLowerCase();
+  const mime = (mimetype || '').toLowerCase();
+  const extOk = IMAGE_EXTENSIONS.includes(ext);
+  const mimeOk = IMAGE_MIME_PREFIXES.some(p => mime.startsWith(p)) ||
+    mime === 'image/svg+xml' || mime === 'image/x-icon' || mime === 'image/vnd.microsoft.icon';
+  // Accept when either signal says image AND the extension is in the allowlist.
+  // (Browsers sometimes send odd mimetypes for .ico/.svg, so extension is the gate.)
+  return extOk && (mimeOk || !mime || mime === 'application/octet-stream');
+}
+
+// Only allow a customIcon value that points at our own uploads/icons dirs.
+// Prevents arbitrary URLs/paths being persisted from public input.
+function sanitizeUploadPath(value) {
+  if (!value || typeof value !== 'string') return null;
+  const v = value.trim();
+  if (v.startsWith('/uploads/') || v.startsWith('/icons/')) {
+    // Reject any path traversal attempts
+    if (v.includes('..')) return null;
+    return v;
+  }
+  return null;
+}
+
+// Directory holding the bundled, offline-safe icon pack.
+const ICONS_DIR = path.join(__dirname, '..', 'public', 'icons');
+
+function contentTypeForExt(ext) {
+  switch ((ext || '').toLowerCase()) {
+    case '.svg': return 'image/svg+xml';
+    case '.png': return 'image/png';
+    case '.jpg':
+    case '.jpeg': return 'image/jpeg';
+    case '.gif': return 'image/gif';
+    case '.webp': return 'image/webp';
+    case '.ico': return 'image/x-icon';
+    default: return 'application/octet-stream';
+  }
+}
+
+// Find a bundled local icon matching one of the app-name variants.
+// Returns { buffer, contentType } or null. Used as an offline fallback.
+function findLocalIcon(variants) {
+  try {
+    if (!fs.existsSync(ICONS_DIR)) return null;
+    const files = fs.readdirSync(ICONS_DIR);
+    const byBase = new Map();
+    for (const f of files) {
+      const ext = path.extname(f).toLowerCase();
+      if (!IMAGE_EXTENSIONS.includes(ext)) continue;
+      const base = path.basename(f, ext).toLowerCase();
+      if (!byBase.has(base)) byBase.set(base, f);
+    }
+    for (const variant of (variants || [])) {
+      if (byBase.has(variant)) {
+        const f = byBase.get(variant);
+        const buffer = fs.readFileSync(path.join(ICONS_DIR, f));
+        return { buffer, contentType: contentTypeForExt(path.extname(f)) };
+      }
+    }
+  } catch (e) { /* ignore and fall through */ }
+  return null;
+}
+
+// The guaranteed-present generic icon. Returns { buffer, contentType } or null.
+function getDefaultIcon() {
+  try {
+    const defaultPath = path.join(ICONS_DIR, 'default.svg');
+    if (fs.existsSync(defaultPath)) {
+      return { buffer: fs.readFileSync(defaultPath), contentType: 'image/svg+xml' };
+    }
+  } catch (e) { /* ignore */ }
+  return null;
+}
+
 async function registerRoutes(fastify) {
-  
+
   // Public API - get settings and links for homepage
   fastify.get('/api/public/data', async (request, reply) => {
     const { categories, links } = config.getVisibleData(request.session);
@@ -121,6 +200,12 @@ async function registerRoutes(fastify) {
       reply.header('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
       return reply.send(result.buffer);
     };
+
+    // 0. Offline-first: if we have a bundled local icon matching the app name,
+    // serve it immediately. This keeps the dashboard working with no internet
+    // and avoids slow remote timeouts for icons we already ship.
+    const localMatch = findLocalIcon(appVariants);
+    if (localMatch) return sendImage(localMatch);
 
     // 1. Try selfh.st icons with fuzzy app name matching (fast, 2s timeout each)
     for (const variant of appVariants) {
@@ -167,8 +252,17 @@ async function registerRoutes(fastify) {
       }
     }
 
-    // 4. Final fallback - return a generic icon or Google's default
-    reply.redirect(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
+    // 5. Final fallback - serve the bundled generic icon with a 200 so tiles
+    // always show something, even in a fully offline environment. (Previously
+    // this redirected to Google, which fails with no internet.)
+    const fallback = getDefaultIcon();
+    if (fallback) {
+      reply.header('Content-Type', fallback.contentType);
+      reply.header('Cache-Control', 'public, max-age=86400');
+      return reply.send(fallback.buffer);
+    }
+    // Last resort if the bundled pack is somehow missing: redirect (online only).
+    return reply.redirect(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
   });
 
   // User login page (for main site auth)
@@ -920,6 +1014,48 @@ async function registerRoutes(fastify) {
     return config.getRequestStatusByIds(ids);
   });
 
+  // Public icon upload (no auth) - used by the link request form.
+  // Image-only and size-limited (multipart limit is enforced globally in index.js).
+  fastify.post('/api/public/upload/icon', async (request, reply) => {
+    const data = await request.file();
+    if (!data) {
+      return reply.code(400).send({ error: 'No file uploaded' });
+    }
+
+    if (!isImageUpload(data.filename, data.mimetype)) {
+      // Drain the stream so the connection closes cleanly, then reject.
+      try { data.file.resume(); } catch (e) { /* ignore */ }
+      return reply.code(400).send({ error: 'Only image files are allowed (png, jpg, gif, svg, webp, ico)' });
+    }
+
+    const ext = (path.extname(data.filename || '') || '.png').toLowerCase();
+    const filename = `icon-${Date.now()}${ext}`;
+    const uploadPath = path.join(__dirname, '..', 'public', 'uploads', filename);
+
+    const writeStream = fs.createWriteStream(uploadPath);
+    data.file.pipe(writeStream);
+
+    try {
+      await new Promise((resolve, reject) => {
+        writeStream.on('finish', resolve);
+        writeStream.on('error', reject);
+        data.file.on('error', reject);
+      });
+    } catch (err) {
+      try { fs.unlinkSync(uploadPath); } catch (e) { /* ignore */ }
+      return reply.code(400).send({ error: 'Upload failed' });
+    }
+
+    // If the multipart plugin flagged the file as truncated (over the size limit),
+    // remove it and reject.
+    if (data.file.truncated) {
+      try { fs.unlinkSync(uploadPath); } catch (e) { /* ignore */ }
+      return reply.code(400).send({ error: 'File too large' });
+    }
+
+    return { success: true, url: `/uploads/${filename}` };
+  });
+
   fastify.post('/api/public/request/category', async (request, reply) => {
     const { name, submittedBy } = request.body;
     if (!name || !name.trim()) {
@@ -944,7 +1080,7 @@ async function registerRoutes(fastify) {
   });
 
   fastify.post('/api/public/request/link', async (request, reply) => {
-    const { name, url, categoryId, pendingCategoryId, tags, submittedBy } = request.body;
+    const { name, url, categoryId, pendingCategoryId, tags, submittedBy, customIcon } = request.body;
 
     if (!name || !name.trim()) {
       return reply.code(400).send({ error: 'Link name is required' });
@@ -968,7 +1104,8 @@ async function registerRoutes(fastify) {
       url: url.trim(),
       categoryId: categoryId || null,
       pendingCategoryId: pendingCategoryId || null,
-      tags: tags || []
+      tags: tags || [],
+      customIcon: sanitizeUploadPath(customIcon)
     }, submittedBy || 'anonymous');
 
     return result;

@@ -362,7 +362,10 @@
     if (s.showLinkIcons) {
       // Pass link name as app hint for selfh.st icon lookup
       const iconSrc = link.customIcon || `/api/favicon?url=${encodeURIComponent(link.url)}&app=${encodeURIComponent(link.name)}`;
-      iconHtml = `<img class="link-icon" src="${iconSrc}" alt="" loading="lazy" onerror="this.style.display='none'">`;
+      // On error, fall back to the bundled local default icon so tiles always
+      // show something (works fully offline). Guard against an error loop if the
+      // default itself fails to load.
+      iconHtml = `<img class="link-icon" src="${iconSrc}" alt="" loading="lazy" onerror="if(this.src.indexOf('/icons/default.svg')===-1){this.onerror=null;this.src='/icons/default.svg';}else{this.style.display='none';}">`;
     }
 
     // Status bubble for monitored links (will be updated by polling)

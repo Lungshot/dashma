@@ -707,6 +707,7 @@ function addLinkRequest(linkData, submittedBy = 'anonymous') {
     categoryId: linkData.categoryId,
     pendingCategoryId: linkData.pendingCategoryId || null, // Reference to pending category request
     tags: linkData.tags || [],
+    customIcon: linkData.customIcon || null, // Optional uploaded icon path (e.g. /uploads/<file>)
     status: 'pending',
     submittedAt: new Date().toISOString(),
     submittedBy: submittedBy,
@@ -760,7 +761,8 @@ function approveLinkRequest(requestId, reviewedBy = 'admin') {
     name: request.name,
     url: request.url,
     categoryId: request.categoryId,
-    tags: request.tags
+    tags: request.tags,
+    customIcon: request.customIcon || null
   });
 
   // Update request status

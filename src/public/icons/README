@@ -1,0 +1,47 @@
+dashma bundled offline icon pack
+================================
+
+This directory holds a small set of generic, self-contained icons that ship with
+dashma so the dashboard never needs an internet connection to display a tile icon.
+
+Why this exists
+---------------
+The favicon proxy (GET /api/favicon) normally fetches icons from remote CDNs
+(selfh.st, Google s2, allesedv, duckduckgo, simple icons). In an offline / air-gapped
+environment every one of those fails. To stay offline-first, the proxy:
+
+  1. First checks this directory for a file whose base name matches the link's
+     app-name variants (see getAppNameVariants() in src/server/routes.js).
+  2. Falls back to the remote CDNs when online and no local match is found.
+  3. If everything fails, serves default.svg with HTTP 200 (no Google redirect),
+     so a tile always shows an icon.
+
+The front-end (src/public/js/main.js) also points its <img onerror> fallback at
+/icons/default.svg, so broken or offline icons degrade to the generic icon instead
+of disappearing.
+
+Files
+-----
+  default.svg  - neutral generic link icon (the guaranteed fallback). Do not remove.
+  globe.svg    - generic web / internet
+  link.svg     - generic hyperlink
+  server.svg   - generic server / self-hosted service
+  folder.svg   - generic folder / file store
+  app.svg      - generic application / app grid
+
+All icons here are simple, hand-authored SVGs (no copyrighted brand logos) and are
+released under the same license as dashma.
+
+Adding more icons
+-----------------
+Drop additional image files (.svg/.png/.jpg/.gif/.webp/.ico) into this directory.
+Name the file after the app so it matches automatically: the proxy lower-cases the
+link title, strips non-alphanumerics, and tries the no-hyphen slug, the hyphen slug,
+and the first word. Examples:
+
+  Title "Portainer"        -> portainer.svg
+  Title "Arctic Wolf"      -> arcticwolf.svg (also matches arctic-wolf / arctic)
+  Title "SFTP-GO"          -> sftpgo.svg (also matches sftp-go / sftp)
+
+These files are committed to the repo (unlike src/public/uploads/, which is ignored).
+Keep the pack lightweight - do not scrape thousands of brand logos.
