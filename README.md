@@ -72,6 +72,28 @@ npm run dev
 
 ---
 
+## 🔁 Reverse proxy & sessions
+
+Two environment variables control session security. Set them in `docker-compose.yml` (or your container runtime) for any non-trivial deployment.
+
+### `COOKIE_SECURE`
+
+Set `COOKIE_SECURE=true` whenever the **browser** reaches Dashma over HTTPS — whether directly or through a reverse proxy (Caddy, nginx, Traefik) that terminates TLS. Dashma trusts the proxy's `X-Forwarded-Proto` header, so the `Secure` session cookie is issued correctly even when the proxy talks to the container over plain HTTP.
+
+Only leave it unset or `false` for plain-HTTP access (e.g. `http://host:port` on a LAN). Setting `COOKIE_SECURE=true` while serving over HTTP will prevent the browser from storing the session cookie, so login appears to succeed but the page just reloads.
+
+### `SESSION_SECRET`
+
+`SESSION_SECRET` signs the session cookie so sessions cannot be forged. Use a random string of **at least 32 characters**, keep it secret, and keep it **stable across restarts** — changing it invalidates existing sessions and logs everyone out. In production, Dashma warns on startup if this is unset or left at the default.
+
+Generate a strong value with:
+
+```bash
+openssl rand -base64 48
+```
+
+---
+
 ## ⌨️ Keyboard Shortcuts
 
 | Key | Action |

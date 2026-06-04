@@ -11,13 +11,18 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      # COOKIE_SECURE: Set to 'true' only if NOT behind a reverse proxy (direct HTTPS)
-      # Leave unset or 'false' when behind Caddy/nginx/Traefik that handles SSL
+      # COOKIE_SECURE: Set to 'true' whenever the BROWSER reaches Dashma over HTTPS.
+      # That includes both direct HTTPS and access through a reverse proxy
+      # (Caddy/nginx/Traefik) that terminates TLS. Dashma trusts the proxy's
+      # X-Forwarded-Proto header, so the Secure cookie is set correctly behind a proxy.
+      # Only leave it unset/'false' for plain-HTTP access (e.g. http://host:port on a LAN).
       # - COOKIE_SECURE=true
-      # Optional: Set a custom session secret for enhanced security
-      # In Portainer, add this as an environment variable:
-      # SESSION_SECRET=your-secure-random-string-minimum-32-characters
-      # - SESSION_SECRET=${SESSION_SECRET}
+      #
+      # SESSION_SECRET: Signs the session cookie so sessions cannot be forged.
+      # Use a random string of at least 32 characters and keep it SECRET.
+      # Keep it stable across restarts -- changing it logs everyone out.
+      # Generate one with: openssl rand -base64 48
+      # - SESSION_SECRET=your-secure-random-string-minimum-32-characters
     volumes:
       - dashma_data:/app/src/data
       - dashma_uploads:/app/src/public/uploads
