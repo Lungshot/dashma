@@ -697,7 +697,10 @@ function getVisibleData(session) {
 function exportConfig() {
   const config = getConfig();
 
-  return {
+  // Deep-copy so the exported object never shares identity with the live cache
+  // (mirrors the JSON round-trip loadConfig uses). requests intentionally omitted —
+  // transient approval-queue state stays instance-local.
+  return JSON.parse(JSON.stringify({
     exportVersion: 2,
     settings: config.settings,
     admin: config.admin,
@@ -706,8 +709,7 @@ function exportConfig() {
     categories: config.categories,
     links: config.links,
     widgets: config.widgets || []
-    // requests intentionally omitted — transient approval-queue state stays instance-local
-  };
+  }));
 }
 
 // Restore a backup into this instance with replace semantics: any section present
@@ -715,12 +717,33 @@ function exportConfig() {
 // backups that lack the new sections — absent sections fall back to current, so an
 // old appearance-only export does not blank a configured instance's auth or users.
 function importConfig(newConfig) {
-  if (!newConfig || typeof newConfig !== 'object') {
+  if (!newConfig || typeof newConfig !== 'object' || Array.isArray(newConfig)) {
     throw new Error('Invalid config file');
   }
 
+  const present = (key) => Object.hasOwn(newConfig, key);
+  const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+  // Validate the shape of any section that is present BEFORE touching state, so a
+  // structurally invalid file is rejected wholesale rather than persisted — a bad
+  // admin record would lock admins out, and a non-array categories/links would crash
+  // the public dashboard. (Deeper validation — role-id references, username dedup —
+  // remains out of scope; this is just the basic type guard.)
+  if (present('settings') && !isPlainObject(newConfig.settings)) {
+    throw new Error('Invalid config file: settings must be an object');
+  }
+  if (present('admin') && !(isPlainObject(newConfig.admin)
+      && typeof newConfig.admin.username === 'string'
+      && typeof newConfig.admin.passwordHash === 'string')) {
+    throw new Error('Invalid config file: admin must include username and passwordHash');
+  }
+  for (const key of ['users', 'ssoUsers', 'categories', 'links', 'widgets']) {
+    if (present(key) && !Array.isArray(newConfig[key])) {
+      throw new Error(`Invalid config file: ${key} must be an array`);
+    }
+  }
+
   const currentConfig = getConfig();
-  const has = (key) => Object.prototype.hasOwnProperty.call(newConfig, key);
 
   // settings is shallow-MERGED (file wins) rather than replaced, so a v1 file whose
   // settings lacks authMode/mainAuthMode/entraId does not wipe those keys on the target.
@@ -732,19 +755,28 @@ function importConfig(newConfig) {
   // Every other section uses a uniform presence check: present in the file -> replace
   // (an explicit empty array like users: [] counts as present and clears the section);
   // absent -> keep current. requests is never imported.
-  configCache = {
+  const next = {
     ...currentConfig,
     settings: mergedSettings,
-    admin: has('admin') ? newConfig.admin : currentConfig.admin,
-    users: has('users') ? newConfig.users : currentConfig.users,
-    ssoUsers: has('ssoUsers') ? newConfig.ssoUsers : currentConfig.ssoUsers,
-    categories: has('categories') ? newConfig.categories : currentConfig.categories,
-    links: has('links') ? newConfig.links : currentConfig.links,
-    widgets: has('widgets') ? newConfig.widgets : currentConfig.widgets,
+    admin: present('admin') ? newConfig.admin : currentConfig.admin,
+    users: present('users') ? newConfig.users : currentConfig.users,
+    ssoUsers: present('ssoUsers') ? newConfig.ssoUsers : currentConfig.ssoUsers,
+    categories: present('categories') ? newConfig.categories : currentConfig.categories,
+    links: present('links') ? newConfig.links : currentConfig.links,
+    widgets: present('widgets') ? newConfig.widgets : currentConfig.widgets,
     requests: currentConfig.requests
   };
 
-  saveConfig();
+  // Persist transactionally: only keep the swapped-in cache if the disk write
+  // succeeds, so a failed write never leaves memory diverged from disk.
+  const previous = configCache;
+  configCache = next;
+  try {
+    saveConfig();
+  } catch (err) {
+    configCache = previous;
+    throw err;
+  }
 }
 
 // Request management functions

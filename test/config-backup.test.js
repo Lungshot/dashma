@@ -65,6 +65,7 @@ function fullSource() {
 
 test.afterEach(() => {
   if (fs.existsSync(TMP)) fs.unlinkSync(TMP);
+  config.loadConfig(); // reset the module cache so isolation does not depend on each test calling loadState()
 });
 
 // --- U1: exportConfig ------------------------------------------------------
@@ -191,10 +192,28 @@ test('U2 edge: importConfig({}) leaves every section unchanged', () => {
   assert.strictEqual(r.settings.authMode, 'entraId');
 });
 
-test('U2 error path: null / non-object throw and do not mutate', () => {
+test('U2 error path: null / non-object / array throw and do not mutate', () => {
   loadState(fullSource());
   const snapshot = JSON.stringify(config.getConfig());
   assert.throws(() => config.importConfig(null), /Invalid config file/);
   assert.throws(() => config.importConfig('not an object'), /Invalid config file/);
+  assert.throws(() => config.importConfig([]), /Invalid config file/);
+  assert.strictEqual(JSON.stringify(config.getConfig()), snapshot);
+});
+
+test('U2 validation: malformed sections are rejected before any mutation', () => {
+  loadState(fullSource());
+  const snapshot = JSON.stringify(config.getConfig());
+
+  // A null/!object admin would break admin login if persisted.
+  assert.throws(() => config.importConfig({ admin: null }), /admin must include/);
+  assert.throws(() => config.importConfig({ admin: { username: 'x' } }), /admin must include/);
+  // Non-array list sections would crash the dashboard / admin API if persisted.
+  assert.throws(() => config.importConfig({ users: 'not-an-array' }), /users must be an array/);
+  assert.throws(() => config.importConfig({ categories: {} }), /categories must be an array/);
+  // settings must be an object.
+  assert.throws(() => config.importConfig({ settings: [] }), /settings must be an object/);
+
+  // None of the rejected imports mutated the live config.
   assert.strictEqual(JSON.stringify(config.getConfig()), snapshot);
 });
