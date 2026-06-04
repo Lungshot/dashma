@@ -24,6 +24,8 @@
       renderCategories();
       renderWidgets('below-categories');
       renderWidgets('footer');
+      // Offset main content so fixed sidebar/header widgets don't overlap it
+      updateLayoutOffsets();
       setupEventListeners();
       // Start monitoring polling
       startMonitoringPolling();
@@ -124,7 +126,22 @@
     }
 
     root.style.setProperty('--bg-color', colors.backgroundColor);
-    root.style.setProperty('--bg-image', s.backgroundImage ? `url(${s.backgroundImage})` : 'none');
+    // Background image: preload before applying so the page never flashes a
+    // half-loaded or broken image. Until the image is fully decoded we keep
+    // the solid background color (--bg-image: none). On error we leave it.
+    if (s.backgroundImage) {
+      const bgImg = new Image();
+      bgImg.onload = () => {
+        root.style.setProperty('--bg-image', `url(${s.backgroundImage})`);
+      };
+      bgImg.onerror = () => {
+        root.style.setProperty('--bg-image', 'none');
+      };
+      root.style.setProperty('--bg-image', 'none');
+      bgImg.src = s.backgroundImage;
+    } else {
+      root.style.setProperty('--bg-image', 'none');
+    }
     root.style.setProperty('--font-family', s.fontFamily);
     root.style.setProperty('--title-font', s.titleFontFamily);
     root.style.setProperty('--text-color', colors.textColor);
@@ -430,6 +447,19 @@
     initWeatherWidgets();
   }
 
+  // Toggle body classes that offset the main content so fixed-position
+  // widget containers (left/right sidebar, header) don't overlap categories.
+  function updateLayoutOffsets() {
+    const widgets = (appData.widgets || []).filter(w => w.enabled);
+    const hasLeft = widgets.some(w => w.position === 'left-sidebar');
+    const hasRight = widgets.some(w => w.position === 'right-sidebar');
+    const hasHeader = widgets.some(w => w.position === 'header');
+
+    document.body.classList.toggle('has-left-sidebar', hasLeft);
+    document.body.classList.toggle('has-right-sidebar', hasRight);
+    document.body.classList.toggle('has-header-widgets', hasHeader);
+  }
+
   // Render a single widget
   function renderWidget(widget) {
     switch (widget.type) {
@@ -485,9 +515,11 @@
     if (config.containerStyle === 'transparent') widgetClasses.push('container-transparent');
     else if (config.containerStyle === 'bordered') widgetClasses.push('container-bordered');
 
-    // Widget width
-    const widgetWidth = widget.width || 'full';
-    widgetClasses.push(`width-${widgetWidth}`);
+    // Widget width: only apply an explicit width class when one is set, so an
+    // unset width lets the widget size to its content instead of stretching.
+    if (widget.width) {
+      widgetClasses.push(`width-${widget.width}`);
+    }
 
     // Widget alignment
     if (widget.alignment) {
@@ -592,9 +624,11 @@
       classes.push(`text-${config.alignment}`);
     }
 
-    // Widget width
-    const widgetWidth = widget.width || 'full';
-    classes.push(`width-${widgetWidth}`);
+    // Widget width: only apply an explicit width class when one is set, so an
+    // unset width lets the clock size to its content instead of stretching.
+    if (widget.width) {
+      classes.push(`width-${widget.width}`);
+    }
 
     // Widget alignment (horizontal position)
     if (widget.alignment) {
@@ -741,7 +775,7 @@
   function renderWeatherWidget(widget) {
     const config = widget.config || {};
     const classes = ['widget', 'weather-widget'];
-    classes.push(`width-${widget.width || 'full'}`);
+    if (widget.width) classes.push(`width-${widget.width}`);
     if (widget.alignment) classes.push(`widget-align-${widget.alignment}`);
 
     return `
@@ -760,7 +794,7 @@
     const height = config.height || '300px';
     const sandbox = config.sandbox || 'allow-scripts allow-same-origin';
     const classes = ['widget', 'iframe-widget'];
-    classes.push(`width-${widget.width || 'full'}`);
+    if (widget.width) classes.push(`width-${widget.width}`);
     if (widget.alignment) classes.push(`widget-align-${widget.alignment}`);
 
     return `
@@ -776,7 +810,7 @@
     const config = widget.config || {};
     const customCss = config.css ? `<style>${config.css}</style>` : '';
     const classes = ['widget', 'custom-html-widget'];
-    classes.push(`width-${widget.width || 'full'}`);
+    if (widget.width) classes.push(`width-${widget.width}`);
     if (widget.alignment) classes.push(`widget-align-${widget.alignment}`);
 
     return `

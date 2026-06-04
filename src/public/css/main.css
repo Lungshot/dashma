@@ -360,6 +360,9 @@ body {
   background: var(--category-bg-color, rgba(255, 255, 255, 0.03));
   border-radius: 12px;
   padding: 20px;
+  /* Soften wallpaper showing through the translucent panel for readability */
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   transition: background 0.2s ease;
 }
 
@@ -382,6 +385,7 @@ body {
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--category-title-color, var(--text-color, #ffffff));
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   transition: all 0.2s ease;
 }
 
@@ -418,12 +422,19 @@ body {
 .link-card {
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   padding: 12px 16px;
   background: var(--link-card-bg-color, rgba(255, 255, 255, 0.05));
   border-radius: 8px;
   text-decoration: none;
   color: var(--text-color, #ffffff);
+  /* Softens busy wallpapers behind translucent cards for readability */
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  /* Allow flex children to shrink instead of overflowing the card */
+  min-width: 0;
   transition: all 0.2s ease;
 }
 
@@ -436,7 +447,11 @@ body {
 
 .link-name {
   font-size: 0.95rem;
-  flex-grow: 1;
+  /* Take available room but stay shrinkable so long names don't push tags
+     off the card; wrap rather than clip when space is tight */
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .link-tags {
@@ -444,7 +459,10 @@ body {
   gap: 4px;
   flex-wrap: wrap;
   margin-left: auto;
-  flex-shrink: 0;
+  /* Allow the tag group to wrap onto its own line beneath the name when the
+     name is long for the column width */
+  flex-shrink: 1;
+  min-width: 0;
   justify-content: flex-end;
 }
 
@@ -464,6 +482,7 @@ body {
   padding: 8px 0;
   text-decoration: none;
   color: var(--text-color, #ffffff);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   transition: all 0.2s ease;
 }
 
@@ -867,22 +886,35 @@ body {
 /* Request Link */
 .request-link-container {
   text-align: center;
-  padding: 15px 20px;
+  padding: 20px;
   margin-top: 10px;
 }
 
+/* Prominent, button-like call to action (still themed via variables) */
 .request-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
   color: var(--accent-color, #888888);
   text-decoration: none;
-  font-size: 0.85rem;
-  opacity: 0.7;
-  transition: opacity 0.2s ease, color 0.2s ease;
+  background: transparent;
+  border: 1.5px solid var(--accent-color, #888888);
+  border-radius: 8px;
+  transition: background 0.2s ease, color 0.2s ease,
+              box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.request-link:hover {
-  opacity: 1;
-  color: var(--text-color, #ffffff);
-  text-decoration: underline;
+.request-link:hover,
+.request-link:focus-visible {
+  color: var(--bg-color, #212121);
+  background: var(--accent-color, #888888);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transform: translateY(-1px);
+  text-decoration: none;
 }
 
 /* Status Indicator - Monitoring icon */
@@ -1305,6 +1337,34 @@ body {
 .widget.width-third { width: calc(33.333% - 14px); flex: 0 0 calc(33.333% - 14px); }
 .widget.width-quarter { width: calc(25% - 15px); flex: 0 0 calc(25% - 15px); }
 .widget.width-auto { width: auto; flex: 0 0 auto; }
+
+/* Default sizing when no explicit width class is set: size to content rather
+   than stretching to fill the row, and stay centered in the flex-wrap
+   container. This stops the clock / server-monitor cards from leaving large
+   blank space. Explicit width-* classes above still win. */
+.widget:not([class*="width-"]) {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* iframe and custom-html widgets without an explicit width still default to
+   full width, since their content is meant to span the area. */
+.widget.iframe-widget:not([class*="width-"]),
+.widget.custom-html-widget:not([class*="width-"]) {
+  flex: 0 0 100%;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Clock / server-monitor get a comfortable content-fit cap so they don't grow
+   absurdly wide on large screens. */
+.widget.clock-widget:not([class*="width-"]),
+.widget.server-monitor-widget:not([class*="width-"]) {
+  max-width: min(100%, 480px);
+}
 
 /* Widget Alignment within container */
 .widget.widget-align-left { margin-right: auto; }
