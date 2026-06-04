@@ -26,12 +26,22 @@ Navigate entirely with your keyboard:
 - Flexible column layouts (1-6 columns)
 - Custom colors, fonts, and backgrounds
 - Hover animations and visual effects
-- Favicon support with auto-fetching
+- **Custom & offline icons** - upload your own link icons, or fall back to the bundled icon pack so tiles still render with no internet access
 
 ### 🔐 Flexible Authentication
 - **Public** - No login required
 - **Basic Auth** - Simple username/password
 - **Microsoft Entra ID** - Enterprise SSO with guided setup wizard
+
+### 🔒 Role-Based Access Control
+- Define roles (e.g. `HR`, `IT`, `Public`) and gate categories to the people who should see them
+- Per-category visibility: **public**, **any logged-in user**, or **specific roles**
+- Assign roles to local users, or map Entra ID sign-ins to roles by email — filtering happens server-side
+
+### 📥 Link Requests
+- Users submit category/link requests from a public form, optionally attaching an uploaded icon
+- Submitters see live status badges (**pending / approved / denied**) for the requests they made
+- Admins approve or deny from the panel, with a full **history** of past requests and actions
 
 ### 🛠️ Admin Panel
 Everything is configured through a web GUI at `/admin` - no config files to edit. Export and import your configuration as JSON for easy backup.
