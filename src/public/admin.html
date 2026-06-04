@@ -681,18 +681,32 @@
 
         <div class="card" id="ssoRoleMappingCard">
           <h3 class="card-title">SSO Role Mapping</h3>
-          <p class="text-muted mb-20">Map Microsoft Entra ID (SSO) user emails to roles. These roles are applied when the user signs in via SSO.</p>
+          <p class="text-muted mb-20">Assign roles to Microsoft Entra ID (SSO) users. Pick a role, then check the users who should have it. Users appear here automatically after their first SSO sign-in.</p>
+
+          <div class="form-group">
+            <label class="form-label" for="ssoRoleSelect">Role</label>
+            <select class="form-input" id="ssoRoleSelect"></select>
+          </div>
+
+          <div id="ssoUserChecklist" class="role-checkbox-list" style="margin-bottom: 1rem;">
+            <!-- Known SSO users with checkboxes rendered here -->
+          </div>
+
           <div class="form-row mb-20">
             <div class="form-group" style="margin-bottom: 0; flex: 1;">
-              <input type="email" class="form-input" id="newSsoEmail" placeholder="user@example.com">
+              <input type="email" class="form-input" id="newSsoEmail" placeholder="Add a user by email (hasn't signed in yet)">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <button class="btn btn-primary" id="addSsoMappingBtn">Add Mapping</button>
+              <button class="btn" id="addSsoMappingBtn">Add User</button>
             </div>
           </div>
-          <ul class="item-list" id="ssoMappingList">
-            <!-- SSO mappings rendered here -->
-          </ul>
+
+          <details id="ssoMappingsDetails">
+            <summary class="text-muted" style="cursor: pointer; font-size: 0.85rem;">All current mappings</summary>
+            <ul class="item-list" id="ssoMappingList" style="margin-top: 0.75rem;">
+              <!-- SSO mappings rendered here -->
+            </ul>
+          </details>
         </div>
 
         <div class="btn-group">
