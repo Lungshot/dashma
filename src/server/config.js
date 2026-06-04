@@ -38,6 +38,9 @@ const defaultConfig = {
     showRequestLink: false,
     requestLinkText: 'Request Link Addition',
     requestLinkUrl: '/request',
+    // Role-based access control
+    roles: [], // Admin-defined roles: { id, name }. id is a slug (e.g. 'hr', 'net')
+    entraRoleAssignments: {}, // Maps lowercased email -> [roleId...] for SSO/Entra users
     // Monitoring settings
     monitoringSettings: {
       defaultInterval: 60,
@@ -393,7 +396,7 @@ function getUsers() {
   return config.users;
 }
 
-function addUser(username, password) {
+function addUser(username, password, roles = []) {
   const config = getConfig();
   if (!config.users) {
     config.users = [];
@@ -408,12 +411,13 @@ function addUser(username, password) {
     id: uuidv4(),
     username: username,
     passwordHash: bcrypt.hashSync(password, 10),
+    roles: Array.isArray(roles) ? roles : [],
     createdAt: new Date().toISOString()
   };
 
   config.users.push(newUser);
   saveConfig();
-  return { id: newUser.id, username: newUser.username, createdAt: newUser.createdAt };
+  return { id: newUser.id, username: newUser.username, roles: newUser.roles, createdAt: newUser.createdAt };
 }
 
 function updateUser(id, updates) {
@@ -432,8 +436,17 @@ function updateUser(id, updates) {
     config.users[index].passwordHash = bcrypt.hashSync(updates.password, 10);
   }
 
+  if (Array.isArray(updates.roles)) {
+    config.users[index].roles = updates.roles;
+  }
+
   saveConfig();
-  return { id: config.users[index].id, username: config.users[index].username, createdAt: config.users[index].createdAt };
+  return {
+    id: config.users[index].id,
+    username: config.users[index].username,
+    roles: config.users[index].roles || [],
+    createdAt: config.users[index].createdAt
+  };
 }
 
 function deleteUser(id) {
@@ -447,9 +460,166 @@ function verifyUser(username, password) {
   const user = config.users.find(u => u.username === username);
   if (!user) return null;
   if (bcrypt.compareSync(password, user.passwordHash)) {
-    return { id: user.id, username: user.username };
+    return { id: user.id, username: user.username, roles: user.roles || [] };
   }
   return null;
+}
+
+// Role management functions
+function slugify(name) {
+  return String(name || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function getRoles() {
+  const config = getConfig();
+  if (!config.settings.roles) {
+    config.settings.roles = [];
+    saveConfig();
+  }
+  return config.settings.roles;
+}
+
+function addRole({ name }) {
+  const config = getConfig();
+  if (!config.settings.roles) config.settings.roles = [];
+
+  const trimmed = String(name || '').trim();
+  if (!trimmed) throw new Error('Role name is required');
+
+  // Generate a unique slug id
+  const base = slugify(trimmed) || 'role';
+  let id = base;
+  let counter = 2;
+  while (config.settings.roles.some(r => r.id === id)) {
+    id = `${base}-${counter}`;
+    counter++;
+  }
+
+  const newRole = { id, name: trimmed };
+  config.settings.roles.push(newRole);
+  saveConfig();
+  return newRole;
+}
+
+function updateRole(id, { name }) {
+  const config = getConfig();
+  const role = (config.settings.roles || []).find(r => r.id === id);
+  if (!role) throw new Error('Role not found');
+
+  const trimmed = String(name || '').trim();
+  if (!trimmed) throw new Error('Role name is required');
+
+  role.name = trimmed;
+  saveConfig();
+  return role;
+}
+
+function deleteRole(id) {
+  const config = getConfig();
+  config.settings.roles = (config.settings.roles || []).filter(r => r.id !== id);
+
+  // Strip the role from all categories' access lists
+  (config.categories || []).forEach(cat => {
+    if (cat.access && Array.isArray(cat.access.roles)) {
+      cat.access.roles = cat.access.roles.filter(rid => rid !== id);
+    }
+  });
+
+  // Strip the role from all users
+  (config.users || []).forEach(user => {
+    if (Array.isArray(user.roles)) {
+      user.roles = user.roles.filter(rid => rid !== id);
+    }
+  });
+
+  // Strip the role from Entra role assignments
+  const assignments = config.settings.entraRoleAssignments || {};
+  Object.keys(assignments).forEach(email => {
+    assignments[email] = (assignments[email] || []).filter(rid => rid !== id);
+  });
+
+  saveConfig();
+}
+
+// Entra/SSO role assignment functions
+function getEntraRoleAssignments() {
+  const config = getConfig();
+  if (!config.settings.entraRoleAssignments) {
+    config.settings.entraRoleAssignments = {};
+    saveConfig();
+  }
+  return config.settings.entraRoleAssignments;
+}
+
+function setEntraRoleAssignments(map) {
+  const config = getConfig();
+  const normalized = {};
+  if (map && typeof map === 'object') {
+    Object.keys(map).forEach(email => {
+      const key = String(email).toLowerCase().trim();
+      if (key) {
+        normalized[key] = Array.isArray(map[email]) ? map[email] : [];
+      }
+    });
+  }
+  config.settings.entraRoleAssignments = normalized;
+  saveConfig();
+  return config.settings.entraRoleAssignments;
+}
+
+// Look up roles for an SSO/Entra email (case-insensitive)
+function getRolesForEmail(email) {
+  if (!email) return [];
+  const config = getConfig();
+  const assignments = config.settings.entraRoleAssignments || {};
+  const normalizedEmail = String(email).toLowerCase().trim();
+  for (const key of Object.keys(assignments)) {
+    if (key.toLowerCase().trim() === normalizedEmail) {
+      return Array.isArray(assignments[key]) ? assignments[key] : [];
+    }
+  }
+  return [];
+}
+
+// Filter categories and links for a viewer based on category access rules
+function getVisibleData(session) {
+  const categories = getCategories();
+  const links = getLinks();
+
+  session = session || {};
+  const isAdmin = !!session.authenticated;
+  const isLoggedIn = isAdmin || !!session.userAuthenticated;
+  const viewerRoles = Array.isArray(session.roles) ? session.roles : [];
+
+  const canSee = (category) => {
+    if (isAdmin) return true; // Admins see everything
+
+    const access = category.access;
+    // Absent or undefined access defaults to public
+    if (!access || !access.visibility || access.visibility === 'public') {
+      return true;
+    }
+    if (access.visibility === 'authed') {
+      return isLoggedIn;
+    }
+    if (access.visibility === 'roles') {
+      if (!isLoggedIn) return false;
+      const allowedRoles = Array.isArray(access.roles) ? access.roles : [];
+      return allowedRoles.some(rid => viewerRoles.includes(rid));
+    }
+    // Unknown visibility value -> treat as public (fail open to public, never to private leak)
+    return true;
+  };
+
+  const visibleCategories = categories.filter(canSee);
+  const visibleIds = new Set(visibleCategories.map(c => c.id));
+  const visibleLinks = links.filter(l => visibleIds.has(l.categoryId));
+
+  return { categories: visibleCategories, links: visibleLinks };
 }
 
 // Export/Import
@@ -669,6 +839,15 @@ module.exports = {
   updateUser,
   deleteUser,
   verifyUser,
+  // Role management
+  getRoles,
+  addRole,
+  updateRole,
+  deleteRole,
+  getEntraRoleAssignments,
+  setEntraRoleAssignments,
+  getRolesForEmail,
+  getVisibleData,
   exportConfig,
   importConfig,
   // Request management

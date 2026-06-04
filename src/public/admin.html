@@ -652,6 +652,22 @@
           </div>
         </div>
 
+        <div class="card" id="rolesCard">
+          <h3 class="card-title">Roles</h3>
+          <p class="text-muted mb-20">Define roles (e.g. HR, NET admin) to control which users can see specific categories. Assign roles to users below and to categories in the Categories panel.</p>
+          <div class="form-row mb-20">
+            <div class="form-group" style="margin-bottom: 0; flex: 1;">
+              <input type="text" class="form-input" id="newRoleName" placeholder="New role name (e.g. HR)">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <button class="btn btn-primary" id="addRoleBtn">Add Role</button>
+            </div>
+          </div>
+          <ul class="item-list" id="roleList">
+            <!-- Roles rendered here -->
+          </ul>
+        </div>
+
         <div class="card" id="userManagementCard">
           <h3 class="card-title">User Management</h3>
           <p class="text-muted mb-20">Manage users who can access the main site when basic authentication is enabled.</p>
@@ -660,6 +676,22 @@
           </div>
           <ul class="item-list" id="userList">
             <!-- Users rendered here -->
+          </ul>
+        </div>
+
+        <div class="card" id="ssoRoleMappingCard">
+          <h3 class="card-title">SSO Role Mapping</h3>
+          <p class="text-muted mb-20">Map Microsoft Entra ID (SSO) user emails to roles. These roles are applied when the user signs in via SSO.</p>
+          <div class="form-row mb-20">
+            <div class="form-group" style="margin-bottom: 0; flex: 1;">
+              <input type="email" class="form-input" id="newSsoEmail" placeholder="user@example.com">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <button class="btn btn-primary" id="addSsoMappingBtn">Add Mapping</button>
+            </div>
+          </div>
+          <ul class="item-list" id="ssoMappingList">
+            <!-- SSO mappings rendered here -->
           </ul>
         </div>
 
@@ -731,6 +763,19 @@
         <div class="form-group">
           <label class="form-label">Category Name</label>
           <input type="text" class="form-input" id="categoryName" placeholder="Enter category name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Access</label>
+          <select class="form-select" id="categoryVisibility">
+            <option value="public">Public (everyone)</option>
+            <option value="authed">Logged-in users only</option>
+            <option value="roles">Specific roles</option>
+          </select>
+        </div>
+        <div class="form-group" id="categoryRolesGroup" style="display: none;">
+          <label class="form-label">Allowed Roles</label>
+          <div id="categoryRolesCheckboxes" class="role-checkbox-list"></div>
+          <p class="text-muted" id="categoryRolesEmptyHint" style="font-size: 0.8rem; display: none;">No roles defined yet. Add roles in the Authentication panel.</p>
         </div>
       </div>
       <div class="modal-footer">
@@ -835,6 +880,11 @@
         <div class="form-group">
           <label class="form-label">Confirm Password</label>
           <input type="password" class="form-input" id="newUserPasswordConfirm" placeholder="Confirm password" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Roles</label>
+          <div id="userRolesCheckboxes" class="role-checkbox-list"></div>
+          <p class="text-muted" id="userRolesEmptyHint" style="font-size: 0.8rem; display: none;">No roles defined yet. Add roles in the Authentication panel.</p>
         </div>
       </div>
       <div class="modal-footer">

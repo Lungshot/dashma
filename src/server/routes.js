@@ -81,10 +81,11 @@ async function registerRoutes(fastify) {
   
   // Public API - get settings and links for homepage
   fastify.get('/api/public/data', async (request, reply) => {
+    const { categories, links } = config.getVisibleData(request.session);
     return {
       settings: config.getPublicSettings(),
-      categories: config.getCategories(),
-      links: config.getLinks(),
+      categories,
+      links,
       widgets: config.getWidgets().filter(w => w.enabled)
     };
   });
@@ -193,6 +194,7 @@ async function registerRoutes(fastify) {
         request.session.userAuthenticated = true;
         request.session.userId = user.id;
         request.session.username = user.username;
+        request.session.roles = user.roles || [];
         return reply.redirect(redirect);
       }
 
@@ -200,6 +202,7 @@ async function registerRoutes(fastify) {
       if (config.verifyAdmin(username, password)) {
         request.session.authenticated = true;
         request.session.username = username;
+        request.session.roles = [];
         return reply.redirect(redirect);
       }
     }
@@ -245,6 +248,7 @@ async function registerRoutes(fastify) {
       request.session.userAuthenticated = true;
       request.session.username = result.account.username;
       request.session.entraUser = true;
+      request.session.roles = config.getRolesForEmail(result.account.username);
       const redirect = request.session.loginRedirect || '/';
       delete request.session.loginRedirect;
       return reply.redirect(redirect);
@@ -278,12 +282,14 @@ async function registerRoutes(fastify) {
         request.session.authenticated = true;
         request.session.username = userEmail;
         request.session.entraUser = true;
+        request.session.roles = [];
         return reply.redirect('/admin');
       } else {
         // Main site login - no allowlist check needed
         request.session.userAuthenticated = true;
         request.session.username = userEmail;
         request.session.entraUser = true;
+        request.session.roles = config.getRolesForEmail(userEmail);
         const redirect = request.session.loginRedirect || '/';
         delete request.session.loginRedirect;
         return reply.redirect(redirect);
@@ -312,7 +318,8 @@ async function registerRoutes(fastify) {
       if (config.verifyAdmin(username, password)) {
         request.session.authenticated = true;
         request.session.username = username;
-        
+        request.session.roles = [];
+
         if (config.mustChangePassword()) {
           return reply.redirect('/admin/change-password');
         }
@@ -338,6 +345,7 @@ async function registerRoutes(fastify) {
       if (config.verifyAdmin(username, password)) {
         request.session.authenticated = true;
         request.session.username = username;
+        request.session.roles = [];
 
         // Check if password change is required
         if (config.mustChangePassword()) {
@@ -380,6 +388,7 @@ async function registerRoutes(fastify) {
       request.session.authenticated = true;
       request.session.username = result.account.username;
       request.session.entraUser = true;
+      request.session.roles = [];
       return reply.redirect('/admin');
     }
 
@@ -594,11 +603,11 @@ async function registerRoutes(fastify) {
     fastify.get('/api/admin/users', async () => {
       const users = config.getUsers();
       // Return users without password hashes
-      return users.map(u => ({ id: u.id, username: u.username, createdAt: u.createdAt }));
+      return users.map(u => ({ id: u.id, username: u.username, roles: u.roles || [], createdAt: u.createdAt }));
     });
 
     fastify.post('/api/admin/users', async (request, reply) => {
-      const { username, password } = request.body;
+      const { username, password, roles } = request.body;
       if (!username || !password) {
         return reply.code(400).send({ error: 'Username and password required' });
       }
@@ -606,16 +615,16 @@ async function registerRoutes(fastify) {
         return reply.code(400).send({ error: 'Password must be at least 4 characters' });
       }
       try {
-        return config.addUser(username, password);
+        return config.addUser(username, password, Array.isArray(roles) ? roles : []);
       } catch (err) {
         return reply.code(400).send({ error: err.message });
       }
     });
 
     fastify.put('/api/admin/users/:id', async (request, reply) => {
-      const { username, password } = request.body;
+      const { username, password, roles } = request.body;
       try {
-        return config.updateUser(request.params.id, { username, password });
+        return config.updateUser(request.params.id, { username, password, roles });
       } catch (err) {
         return reply.code(400).send({ error: err.message });
       }
@@ -624,6 +633,45 @@ async function registerRoutes(fastify) {
     fastify.delete('/api/admin/users/:id', async (request) => {
       config.deleteUser(request.params.id);
       return { success: true };
+    });
+
+    // Role management (admin)
+    fastify.get('/api/admin/roles', async () => {
+      return config.getRoles();
+    });
+
+    fastify.post('/api/admin/roles', async (request, reply) => {
+      try {
+        return config.addRole({ name: request.body.name });
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
+    });
+
+    fastify.put('/api/admin/roles/:id', async (request, reply) => {
+      try {
+        return config.updateRole(request.params.id, { name: request.body.name });
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
+    });
+
+    fastify.delete('/api/admin/roles/:id', async (request) => {
+      config.deleteRole(request.params.id);
+      return { success: true };
+    });
+
+    // SSO/Entra role assignments (email -> [roleId]) (admin)
+    fastify.get('/api/admin/entra-role-assignments', async () => {
+      return config.getEntraRoleAssignments();
+    });
+
+    fastify.put('/api/admin/entra-role-assignments', async (request, reply) => {
+      try {
+        return config.setEntraRoleAssignments(request.body || {});
+      } catch (err) {
+        return reply.code(400).send({ error: err.message });
+      }
     });
 
     // Request management (admin)
