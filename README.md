@@ -35,8 +35,9 @@ Navigate entirely with your keyboard:
 
 ### 🔒 Role-Based Access Control
 - Define roles (e.g. `HR`, `IT`, `Public`) and gate categories to the people who should see them
-- Per-category visibility: **public**, **any logged-in user**, or **specific roles**
-- Assign roles to local users, or map Entra ID sign-ins to roles by email — filtering happens server-side
+- Per-category visibility: **public**, **any logged-in user**, or **specific roles** — set it on the category, or grant a role its categories all at once from the **Roles** section
+- Assign roles to local users, or to SSO users by **checking them off a list of everyone who's signed in via Entra ID** — no email typing
+- Access is enforced server-side, so restricted categories never reach unauthorized users
 
 ### 📥 Link Requests
 - Users submit category/link requests from a public form, optionally attaching an uploaded icon
