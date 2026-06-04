@@ -1,4 +1,4 @@
-/* InventorDash - Main Styles */
+/* Dashma - Main Styles */
 * {
   margin: 0;
   padding: 0;
@@ -879,54 +879,6 @@ body {
   transition: opacity 0.2s ease, color 0.2s ease;
 }
 
-.tab-bar-container {
-  margin: 20px 0 28px;
-  overflow-x: auto;
-}
-
-.category-tabs {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 6px 0;
-}
-
-.category-tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 18px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-color, #ffffff);
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease, color 0.2s ease;
-  white-space: nowrap;
-}
-
-.category-tab:hover {
-  background: rgba(255, 255, 255, 0.12);
-  transform: translateY(-1px);
-}
-
-.category-tab.active {
-  background: var(--accent-color, #888888);
-  color: #111;
-  border-color: var(--accent-color, #888888);
-}
-
-.no-categories-message {
-  padding: 24px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-color, #ffffff);
-  text-align: center;
-  font-size: 1rem;
-}
-
 .request-link:hover {
   opacity: 1;
   color: var(--text-color, #ffffff);
@@ -970,17 +922,13 @@ body {
 }
 
 /* Widget Containers */
-.categories-grid {
-  margin-bottom: 32px;
-}
-
 .widgets-container {
-  margin-bottom: 0;
+  margin-bottom: 30px;
 }
 
-.widgets-above,
-.widgets-below {
-  margin-bottom: 32px;
+.widgets-container.position-below {
+  margin-top: 30px;
+  margin-bottom: 0;
 }
 
 .widgets-container:empty {
@@ -992,7 +940,7 @@ body {
   background: var(--category-bg-color, rgba(255,255,255,0.03));
   border-radius: 12px;
   padding: 20px;
-  margin-bottom: 0;
+  margin-bottom: 20px;
 }
 
 .widget-title {
@@ -1308,64 +1256,6 @@ body {
   width: 64px;
   height: 64px;
   margin-bottom: 5px;
-}
-
-/* MQTT Widget */
-.mqtt-widget {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.mqtt-widget .mqtt-broker,
-.mqtt-widget .mqtt-topic,
-.mqtt-widget .mqtt-meta {
-  font-size: 0.85rem;
-  opacity: 0.8;
-  word-break: break-word;
-}
-
-.mqtt-widget .mqtt-topic {
-  color: var(--accent-color);
-}
-
-.mqtt-widget .mqtt-connection-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  background: rgba(255,255,255,0.08);
-}
-
-.mqtt-widget .mqtt-connection-status.status-online {
-  color: #4ade80;
-}
-
-.mqtt-widget .mqtt-connection-status.status-connecting {
-  color: #fbbf24;
-}
-
-.mqtt-widget .mqtt-connection-status.status-offline,
-.mqtt-widget .mqtt-connection-status.status-error {
-  color: #f87171;
-}
-
-.mqtt-widget .mqtt-payload {
-  margin: 0;
-  padding: 14px;
-  background: var(--link-card-bg-color, rgba(255,255,255,0.05));
-  border-radius: 10px;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: 'Courier New', Consolas, monospace;
-  font-size: 0.9rem;
-  line-height: 1.45;
 }
 
 /* Iframe Widget */

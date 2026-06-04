@@ -2,8 +2,6 @@
 
 A minimal, zen-inspired link dashboard homepage. Fast, lightweight, and fully configurable.
 
-Previous project reference: this project was formerly known as **Dashma**. Original repository: [Dashma](https://github.com/Lungshot/dashma).
-
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ---
@@ -45,7 +43,6 @@ Everything is configured through a web GUI at `/admin` - no config files to edit
 ### Using Docker (Recommended)
 
 ```bash
-export SESSION_SECRET="replace-with-a-random-secret-of-32+chars"
 docker-compose up -d --build
 ```
 
@@ -102,7 +99,7 @@ npm run dev
 ## 📁 Project Structure
 
 ```
-inventordash/
+dashma/
 ├── src/
 │   ├── public/          # Frontend (HTML, CSS, JS)
 │   ├── server/          # Backend (Fastify, routes, auth)
@@ -166,3 +163,4 @@ inventordash/
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
+

@@ -1,4 +1,4 @@
-// InventorDash Admin JavaScript
+// Dashma Admin JavaScript
 (function() {
   'use strict';
 
@@ -104,13 +104,10 @@
     await loadUsers();
     await loadRequests();
     setupNavigation();
-    mountThemePanel();
     populateThemeDropdown();
     setupEventListeners();
     populateForm();
-    populateCategorySelects();
     renderCategories();
-    renderTabs();
     renderLinks();
     renderWidgets();
     renderUsers();
@@ -134,89 +131,10 @@
     lightGroup.innerHTML = grouped.light.map(theme =>
       `<option value="${theme.id}">${theme.name}</option>`
     ).join('');
-
-    renderThemeQuicklist();
-  }
-
-  function renderThemeQuicklist() {
-    const quicklist = document.getElementById('themeQuicklist');
-    if (!quicklist) return;
-
-    const featuredThemeIds = [
-      'tailwindCanvas',
-      'coralNight',
-      'glacierGlass',
-      'plumSignal',
-      'citrusPaper',
-      'abyssMint',
-      'roseFog',
-      'emberSlate',
-      'skyTerminal',
-      'forestCode',
-      'lavenderDust',
-      'neonDusk',
-      'inkstone',
-      'paperMist',
-      'mossStudio',
-      'sandline',
-      'quietEmber'
-    ];
-    const newlyAddedThemeIds = new Set([
-      'tailwindCanvas',
-      'coralNight',
-      'glacierGlass',
-      'plumSignal',
-      'citrusPaper',
-      'abyssMint',
-      'roseFog',
-      'emberSlate',
-      'skyTerminal',
-      'forestCode',
-      'lavenderDust',
-      'neonDusk'
-    ]);
-
-    quicklist.innerHTML = featuredThemeIds.map(themeId => {
-      const theme = getTheme(themeId);
-      const colors = theme.colors;
-      const badge = newlyAddedThemeIds.has(themeId) ? '<span class="theme-chip-badge">New</span>' : '';
-
-      return `
-        <button type="button" class="theme-chip" data-theme-id="${themeId}">
-          <div class="theme-chip-swatches">
-            <span style="background:${colors.backgroundColor}"></span>
-            <span style="background:${colors.categoryBgColor}"></span>
-            <span style="background:${colors.accentColor}"></span>
-            <span style="background:${colors.linkCardBgColor}"></span>
-          </div>
-          <div class="theme-chip-name-row">
-            <div class="theme-chip-name">${escapeHtml(theme.name)}</div>
-            ${badge}
-          </div>
-          <div class="theme-chip-description">${escapeHtml(theme.description)}</div>
-        </button>
-      `;
-    }).join('');
-
-    quicklist.querySelectorAll('.theme-chip').forEach(button => {
-      button.addEventListener('click', () => {
-        document.getElementById('colorTheme').value = button.dataset.themeId;
-        handleThemeChange(true);
-      });
-    });
-
-    syncThemeQuicklistSelection();
-  }
-
-  function syncThemeQuicklistSelection() {
-    const selectedThemeId = document.getElementById('colorTheme')?.value;
-    document.querySelectorAll('.theme-chip').forEach(button => {
-      button.classList.toggle('active', button.dataset.themeId === selectedThemeId);
-    });
   }
 
   // Handle theme selection change
-  function handleThemeChange(saveImmediately = false) {
+  function handleThemeChange() {
     const themeId = document.getElementById('colorTheme').value;
     const customColorsContainer = document.getElementById('customColorsContainer');
 
@@ -231,13 +149,6 @@
       if (theme) {
         applyThemeToForm(theme.colors);
       }
-    }
-
-    syncThemeQuicklistSelection();
-
-    if (saveImmediately) {
-      clearTimeout(autoSaveTimer);
-      saveAppearance(true);
     }
   }
 
@@ -323,16 +234,6 @@
     });
   }
 
-  function mountThemePanel() {
-    const themeCard = document.getElementById('themeSettingsCard');
-    const mountPoint = document.getElementById('themesPanelMount');
-    if (!themeCard || !mountPoint) return;
-    if (themeCard.parentElement !== mountPoint) {
-      mountPoint.appendChild(themeCard);
-    }
-    themeCard.style.display = 'block';
-  }
-
   // Setup event listeners
   function setupEventListeners() {
     // Theme selection
@@ -349,7 +250,6 @@
 
     // Auto-save appearance on change
     setupAppearanceAutoSave();
-    setupThemeAutoSave();
 
     // Save appearance (keep for manual save if needed)
     document.getElementById('saveAppearance').addEventListener('click', saveAppearance);
@@ -374,10 +274,6 @@
     // Categories
     document.getElementById('addCategoryBtn').addEventListener('click', () => openCategoryModal());
     document.getElementById('saveCategoryBtn').addEventListener('click', saveCategory);
-
-    // Tabs
-    document.getElementById('addTabBtn').addEventListener('click', () => openTabModal());
-    document.getElementById('saveTabBtn').addEventListener('click', saveTab);
 
     // Links
     document.getElementById('addLinkBtn').addEventListener('click', () => {
@@ -472,17 +368,6 @@
     });
   }
 
-  function setupThemeAutoSave() {
-    const panel = document.getElementById('panel-themes');
-    if (!panel) return;
-
-    const inputs = panel.querySelectorAll('input:not([type="file"]), select');
-    inputs.forEach(input => {
-      const eventType = (input.type === 'checkbox' || input.tagName === 'SELECT') ? 'change' : 'input';
-      input.addEventListener(eventType, debounceAutoSave);
-    });
-  }
-
   function debounceAutoSave() {
     clearTimeout(autoSaveTimer);
     autoSaveTimer = setTimeout(() => {
@@ -527,7 +412,7 @@
     const s = appConfig.settings;
 
     // Site Title
-    document.getElementById('siteName').value = s.siteName || 'InventorDash';
+    document.getElementById('siteName').value = s.siteName || 'Dashma';
     setSelectValue('titleSize', s.titleSize || 'large');
     setSelectValue('titleAlignment', s.titleAlignment || 'center');
     setSelectValue('titleHoverEffect', s.titleHoverEffect || 'none');
@@ -558,8 +443,6 @@
     } else {
       customColorsContainer.style.display = 'none';
     }
-
-    syncThemeQuicklistSelection();
 
     // Colors
     document.getElementById('backgroundColor').value = s.backgroundColor || '#212121';
@@ -662,145 +545,7 @@
     categories.forEach(cat => {
       linkCategorySelect.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
     });
-
-    populateTabCategorySelects();
   }
-
-  function populateTabCategorySelects() {
-    const categories = appConfig.categories || [];
-    const tabCategoriesSelect = document.getElementById('tabCategories');
-    if (!tabCategoriesSelect) return;
-
-    tabCategoriesSelect.innerHTML = categories.map(cat =>
-      `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`
-    ).join('');
-  }
-
-  function renderTabs() {
-    const list = document.getElementById('tabList');
-    const tabs = (appConfig.tabs || []).sort((a, b) => a.order - b.order);
-
-    if (tabs.length === 0) {
-      list.innerHTML = '<li class="text-muted text-center">No tabs yet</li>';
-      return;
-    }
-
-    list.innerHTML = tabs.map(tab => {
-      const categoryNames = (tab.categoryIds || [])
-        .map(catId => {
-          const category = appConfig.categories.find(c => c.id === catId);
-          return category ? category.name : null;
-        })
-        .filter(Boolean)
-        .join(', ');
-
-      return `
-        <li class="item-list-item" data-id="${tab.id}" draggable="true">
-          <span class="item-drag-handle">☰</span>
-          <div class="item-info">
-            <div class="item-name">${escapeHtml(tab.name)}</div>
-            <div class="item-meta">${categoryNames || 'No categories assigned'}</div>
-          </div>
-          <div class="item-actions">
-            <button class="btn btn-sm" onclick="editTab('${tab.id}')">Edit</button>
-            <button class="btn btn-sm btn-danger" onclick="deleteTab('${tab.id}')">Delete</button>
-          </div>
-        </li>
-      `;
-    }).join('');
-
-    setupDragAndDrop(list, 'tabs');
-  }
-
-  window.openTabModal = function(tabId = null) {
-    const modal = document.getElementById('tabModal');
-    const title = document.getElementById('tabModalTitle');
-    const nameInput = document.getElementById('tabName');
-    const idInput = document.getElementById('tabId');
-    const categorySelect = document.getElementById('tabCategories');
-
-    if (tabId) {
-      const tab = (appConfig.tabs || []).find(t => t.id === tabId);
-      title.textContent = 'Edit Tab';
-      nameInput.value = tab ? tab.name : '';
-      idInput.value = tabId;
-      const selectedIds = tab ? tab.categoryIds || [] : [];
-      Array.from(categorySelect.options).forEach(option => {
-        option.selected = selectedIds.includes(option.value);
-      });
-    } else {
-      title.textContent = 'Add Tab';
-      nameInput.value = '';
-      idInput.value = '';
-      Array.from(categorySelect.options).forEach(option => option.selected = false);
-    }
-
-    modal.classList.add('active');
-    nameInput.focus();
-  };
-
-  window.editTab = function(id) {
-    openTabModal(id);
-  };
-
-  async function saveTab() {
-    const id = document.getElementById('tabId').value;
-    const name = document.getElementById('tabName').value.trim();
-    const categorySelect = document.getElementById('tabCategories');
-    const selectedCategories = Array.from(categorySelect.selectedOptions).map(option => option.value);
-
-    if (!name) {
-      showToast('Tab name is required', true);
-      return;
-    }
-
-    try {
-      let response;
-      if (id) {
-        response = await authFetch(`/api/admin/tabs/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, categoryIds: selectedCategories })
-        });
-      } else {
-        response = await authFetch('/api/admin/tabs', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, categoryIds: selectedCategories })
-        });
-      }
-
-      if (!response.ok) throw new Error('Failed to save');
-
-      await loadConfig();
-      renderTabs();
-      closeModal('tabModal');
-      showToast(id ? 'Tab updated' : 'Tab created');
-    } catch (err) {
-      if (err.message !== 'Authentication required') {
-        showToast('Failed to save tab', true);
-      }
-    }
-  }
-
-  window.deleteTab = async function(id) {
-    if (!confirm('Delete this tab?')) return;
-
-    try {
-      const response = await authFetch(`/api/admin/tabs/${id}`, {
-        method: 'DELETE'
-      });
-      if (!response.ok) throw new Error('Failed to delete');
-
-      await loadConfig();
-      renderTabs();
-      showToast('Tab deleted');
-    } catch (err) {
-      if (err.message !== 'Authentication required') {
-        showToast('Failed to delete tab', true);
-      }
-    }
-  };
 
   // Toggle EntraID settings visibility
   function toggleEntraSettings() {
@@ -1109,9 +854,6 @@
       if (type === 'categories') {
         endpoint = '/api/admin/categories/reorder';
         body = { ids };
-      } else if (type === 'tabs') {
-        endpoint = '/api/admin/tabs/reorder';
-        body = { ids };
       } else if (type === 'widgets') {
         endpoint = '/api/admin/widgets/reorder';
         body = { ids };
@@ -1138,8 +880,6 @@
       // Re-render to reset order
       if (type === 'categories') {
         renderCategories();
-      } else if (type === 'tabs') {
-        renderTabs();
       } else if (type === 'widgets') {
         renderWidgets();
       } else {
@@ -1466,7 +1206,6 @@
 
     const typeLabels = {
       'server-monitor': 'Server Monitor',
-      'mqtt': 'MQTT',
       'clock': 'Clock',
       'weather': 'Weather',
       'iframe': 'Iframe',
@@ -1509,7 +1248,6 @@
     // Show relevant config section
     const configMap = {
       'server-monitor': 'configServerMonitor',
-      'mqtt': 'configMqtt',
       'clock': 'configClock',
       'weather': 'configWeather',
       'iframe': 'configIframe',
@@ -1657,19 +1395,6 @@
           containerStyle: document.getElementById('clockContainerStyle').value,
           borderRadius: document.getElementById('clockBorderRadius').value
         };
-      case 'mqtt':
-        return {
-          protocol: document.getElementById('mqttProtocol').value,
-          host: document.getElementById('mqttHost').value.trim(),
-          port: parseInt(document.getElementById('mqttPort').value) || null,
-          path: document.getElementById('mqttPath').value.trim(),
-          clientId: document.getElementById('mqttClientId').value.trim(),
-          username: document.getElementById('mqttUsername').value.trim(),
-          password: document.getElementById('mqttPassword').value,
-          topic: document.getElementById('mqttTopic').value.trim(),
-          qos: parseInt(document.getElementById('mqttQos').value) || 0,
-          payloadView: document.getElementById('mqttPayloadView').value
-        };
       case 'weather':
         return {
           apiKey: document.getElementById('weatherApiKey').value.trim(),
@@ -1743,18 +1468,6 @@
         // Container
         setSelectValue('clockContainerStyle', config.containerStyle || 'card');
         setSelectValue('clockBorderRadius', config.borderRadius || 'medium');
-        break;
-      case 'mqtt':
-        setSelectValue('mqttProtocol', config.protocol || 'ws');
-        document.getElementById('mqttHost').value = config.host || '';
-        document.getElementById('mqttPort').value = config.port || '';
-        document.getElementById('mqttPath').value = config.path || '';
-        document.getElementById('mqttClientId').value = config.clientId || '';
-        document.getElementById('mqttUsername').value = config.username || '';
-        document.getElementById('mqttPassword').value = config.password || '';
-        document.getElementById('mqttTopic').value = config.topic || '';
-        setSelectValue('mqttQos', config.qos || 0);
-        setSelectValue('mqttPayloadView', config.payloadView || 'auto');
         break;
       case 'weather':
         document.getElementById('weatherApiKey').value = config.apiKey || '';
@@ -1844,17 +1557,6 @@
       // Clock container defaults
       document.getElementById('clockContainerStyle').value = 'card';
       document.getElementById('clockBorderRadius').value = 'medium';
-      // MQTT defaults
-      document.getElementById('mqttProtocol').value = 'ws';
-      document.getElementById('mqttHost').value = '';
-      document.getElementById('mqttPort').value = '';
-      document.getElementById('mqttPath').value = '';
-      document.getElementById('mqttClientId').value = '';
-      document.getElementById('mqttUsername').value = '';
-      document.getElementById('mqttPassword').value = '';
-      document.getElementById('mqttTopic').value = '';
-      document.getElementById('mqttQos').value = '0';
-      document.getElementById('mqttPayloadView').value = 'auto';
       // Weather defaults
       document.getElementById('weatherApiKey').value = '';
       document.getElementById('weatherLocation').value = '';
@@ -2076,7 +1778,7 @@
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'inventordash-config.json';
+      a.download = 'dashma-config.json';
       a.click();
       window.URL.revokeObjectURL(url);
       showToast('Config exported');

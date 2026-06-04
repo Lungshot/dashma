@@ -1,4 +1,4 @@
-/* InventorDash Admin Styles */
+/* Dashma Admin Styles */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -123,106 +123,6 @@ body {
   margin-bottom: 20px;
   padding-bottom: 15px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.theme-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 20px;
-  align-items: start;
-}
-
-.theme-sidebar {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 14px;
-}
-
-.theme-sidebar-title {
-  font-size: 0.78rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #9aa0a6;
-  margin-bottom: 12px;
-}
-
-.theme-quicklist {
-  display: grid;
-  gap: 10px;
-}
-
-.theme-chip {
-  width: 100%;
-  text-align: left;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 10px;
-  cursor: pointer;
-  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-}
-
-.theme-chip:hover {
-  transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.theme-chip.active {
-  border-color: rgba(255, 255, 255, 0.38);
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-
-.theme-chip-swatches {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.theme-chip-swatches span {
-  height: 20px;
-  border-radius: 999px;
-  display: block;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.theme-chip-name {
-  font-size: 0.9rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #ffffff;
-  margin-bottom: 4px;
-}
-
-.theme-chip-name-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.theme-chip-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-size: 0.66rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #081018;
-  background: linear-gradient(135deg, #67e8f9, #a78bfa);
-  flex-shrink: 0;
-}
-
-.theme-chip-description {
-  font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.62);
-  line-height: 1.35;
 }
 
 /* Form Elements */
@@ -609,10 +509,6 @@ body {
 @media (max-width: 768px) {
   .admin-container {
     flex-direction: column;
-  }
-
-  .theme-layout {
-    grid-template-columns: 1fr;
   }
   
   .sidebar {

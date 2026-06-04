@@ -1,27 +1,20 @@
-// InventorDash - Main JavaScript
+// Dashma - Main JavaScript
 (function() {
   'use strict';
 
   let appData = null;
   let monitoringStatuses = {};
-  let mqttStatuses = {};
-  const mqttClients = new Map();
   let searchOpen = false;
   let selectedSearchIndex = -1;
   let filteredResults = [];
-  let collapsedCategories = JSON.parse(localStorage.getItem('inventordash-collapsed') || '[]');
-  let selectedTabId = localStorage.getItem('inventordash-selected-tab') || null;
+  let collapsedCategories = JSON.parse(localStorage.getItem('dashma-collapsed') || '[]');
   let monitoringPollInterval = null;
-  let mqttPollInterval = null;
 
   // Initialize app
   async function init() {
     try {
       const response = await fetch('/api/public/data');
       appData = await response.json();
-      if (!appData.tabs?.some(t => t.id === selectedTabId)) {
-        selectedTabId = appData.tabs?.[0]?.id || null;
-      }
       applySettings();
       // Render widgets in all positions
       renderWidgets('header');
@@ -45,17 +38,6 @@
     fetchMonitoringStatuses();
     // Poll every 30 seconds
     monitoringPollInterval = setInterval(fetchMonitoringStatuses, 30000);
-
-    const hasServerSideMqttWidgets = (appData.widgets || []).some(widget => {
-      if (!widget.enabled || widget.type !== 'mqtt') return false;
-      const protocol = widget.config?.protocol || 'ws';
-      return protocol === 'mqtt' || protocol === 'mqtts';
-    });
-
-    if (hasServerSideMqttWidgets) {
-      fetchMqttStatuses();
-      mqttPollInterval = setInterval(fetchMqttStatuses, 3000);
-    }
   }
 
   // Fetch monitoring statuses from API
@@ -66,16 +48,6 @@
       updateStatusBubbles();
     } catch (err) {
       console.error('Failed to fetch monitoring statuses:', err);
-    }
-  }
-
-  async function fetchMqttStatuses() {
-    try {
-      const response = await fetch('/api/public/mqtt/status');
-      mqttStatuses = await response.json();
-      updateMqttWidgets();
-    } catch (err) {
-      console.error('Failed to fetch MQTT statuses:', err);
     }
   }
 
@@ -125,250 +97,6 @@
           lastCheckedEl.textContent = time;
         }
       }
-    });
-  }
-
-  function updateMqttWidgets() {
-    document.querySelectorAll('.mqtt-widget[data-widget-id]').forEach(widgetEl => {
-      const widgetId = widgetEl.dataset.widgetId;
-      const protocol = widgetEl.dataset.protocol || 'ws';
-      const status = protocol === 'ws' || protocol === 'wss'
-        ? mqttClients.get(widgetId)?.state
-        : mqttStatuses[`mqtt-${widgetId}`];
-      const statusEl = widgetEl.querySelector('.mqtt-connection-status');
-      const messageEl = widgetEl.querySelector('.mqtt-payload');
-      const metaEl = widgetEl.querySelector('.mqtt-meta');
-
-      if (!status) {
-        if (statusEl) {
-          statusEl.className = 'mqtt-connection-status status-offline';
-          statusEl.textContent = 'Offline';
-        }
-        if (messageEl) {
-          messageEl.textContent = 'No payload received yet.';
-        }
-        if (metaEl) {
-          metaEl.textContent = '';
-        }
-        return;
-      }
-
-      if (statusEl) {
-        statusEl.className = `mqtt-connection-status status-${status.status || 'offline'}`;
-        statusEl.textContent = status.status || 'offline';
-      }
-
-      if (messageEl) {
-        const view = widgetEl.dataset.payloadView || 'auto';
-        const payloadText = view === 'text'
-          ? (status.payloadRaw || '')
-          : (view === 'json'
-            ? (status.payloadPretty || status.payloadRaw || '')
-            : (status.payloadIsJson ? (status.payloadPretty || '') : (status.payloadRaw || '')));
-
-        messageEl.textContent = payloadText || 'No payload received yet.';
-      }
-
-      if (metaEl) {
-        const parts = [];
-        if (status.topic) parts.push(`Topic: ${status.topic}`);
-        if (status.lastMessageAt) parts.push(`Last: ${new Date(status.lastMessageAt).toLocaleString()}`);
-        if (status.messageCount !== undefined) parts.push(`Messages: ${status.messageCount}`);
-        if (status.lastError) parts.push(`Error: ${status.lastError}`);
-        metaEl.textContent = parts.join(' | ');
-      }
-    });
-  }
-
-  function setBrowserMqttState(widgetId, partialState) {
-    const entry = mqttClients.get(widgetId);
-    if (!entry) return;
-
-    entry.state = {
-      status: 'offline',
-      topic: entry.config.topic || '',
-      protocol: entry.config.protocol || 'ws',
-      host: entry.config.host || '',
-      port: entry.config.port || '',
-      clientId: entry.options.clientId || '',
-      username: entry.config.username || null,
-      qos: Number(entry.config.qos || 0),
-      messageCount: 0,
-      lastMessageAt: null,
-      lastError: null,
-      payloadRaw: '',
-      payloadPretty: '',
-      payloadIsJson: false,
-      ...entry.state,
-      ...partialState
-    };
-
-    updateMqttWidgets();
-  }
-
-  function normalizeMqttPayload(message) {
-    const raw = message && typeof message.toString === 'function' ? message.toString() : String(message ?? '');
-
-    try {
-      const parsed = JSON.parse(raw);
-      return {
-        raw,
-        pretty: JSON.stringify(parsed, null, 2),
-        isJson: true
-      };
-    } catch (err) {
-      return {
-        raw,
-        pretty: raw,
-        isJson: false
-      };
-    }
-  }
-
-  function syncMqttWidgets() {
-    const widgetElements = Array.from(document.querySelectorAll('.mqtt-widget[data-widget-id]'));
-    const activeIds = new Set(widgetElements.map(el => el.dataset.widgetId));
-
-    mqttClients.forEach((entry, widgetId) => {
-      if (!activeIds.has(widgetId)) {
-        entry.client.end(true);
-        mqttClients.delete(widgetId);
-      }
-    });
-
-    widgetElements.forEach(widgetEl => {
-      const widgetId = widgetEl.dataset.widgetId;
-      const protocol = widgetEl.dataset.protocol || 'ws';
-
-      if (protocol !== 'ws' && protocol !== 'wss') {
-        return;
-      }
-
-      const config = {
-        protocol,
-        host: widgetEl.dataset.host || '',
-        port: widgetEl.dataset.port || '',
-        path: widgetEl.dataset.path || '',
-        topic: widgetEl.dataset.topic || '',
-        clientId: widgetEl.dataset.clientId || '',
-        username: widgetEl.dataset.username || '',
-        password: widgetEl.dataset.password || '',
-        qos: Number(widgetEl.dataset.qos || 0)
-      };
-
-      const normalizedPath = config.path ? (config.path.startsWith('/') ? config.path : `/${config.path}`) : '';
-      const brokerUrl = `${protocol}://${config.host}${config.port ? `:${config.port}` : ''}${normalizedPath}`;
-      const options = {
-        clientId: config.clientId || `inventordash-browser-${widgetId.slice(0, 8)}`,
-        username: config.username || undefined,
-        password: config.password || undefined,
-        reconnectPeriod: 5000,
-        connectTimeout: 10000,
-        clean: true
-      };
-
-      const existing = mqttClients.get(widgetId);
-      const configSignature = JSON.stringify({ brokerUrl, topic: config.topic, qos: config.qos, clientId: options.clientId, username: config.username, password: config.password });
-      if (existing && existing.signature === configSignature) {
-        return;
-      }
-
-      if (existing) {
-        existing.client.end(true);
-        mqttClients.delete(widgetId);
-      }
-
-      if (!window.mqtt || !config.host || !config.topic) {
-        mqttClients.set(widgetId, {
-          client: { end() {} },
-          config,
-          options,
-          signature: configSignature,
-          state: {
-            status: 'error',
-            topic: config.topic || '',
-            lastError: !window.mqtt ? 'MQTT client library not loaded' : (!config.host ? 'MQTT host is required' : 'MQTT topic is required')
-          }
-        });
-        updateMqttWidgets();
-        return;
-      }
-
-      const client = window.mqtt.connect(brokerUrl, options);
-      mqttClients.set(widgetId, {
-        client,
-        config,
-        options,
-        signature: configSignature,
-        state: {
-          status: 'connecting',
-          topic: config.topic,
-          protocol,
-          host: config.host,
-          port: config.port || null,
-          clientId: options.clientId,
-          username: config.username || null,
-          qos: config.qos,
-          messageCount: 0,
-          lastMessageAt: null,
-          lastError: null,
-          payloadRaw: '',
-          payloadPretty: '',
-          payloadIsJson: false
-        }
-      });
-      updateMqttWidgets();
-
-      client.on('connect', () => {
-        setBrowserMqttState(widgetId, {
-          status: 'online',
-          lastError: null
-        });
-
-        client.subscribe(config.topic, { qos: config.qos }, (err) => {
-          if (err) {
-            setBrowserMqttState(widgetId, {
-              status: 'error',
-              lastError: err.message
-            });
-          }
-        });
-      });
-
-      client.on('reconnect', () => {
-        setBrowserMqttState(widgetId, {
-          status: 'connecting'
-        });
-      });
-
-      client.on('offline', () => {
-        setBrowserMqttState(widgetId, {
-          status: 'offline'
-        });
-      });
-
-      client.on('error', (err) => {
-        setBrowserMqttState(widgetId, {
-          status: 'error',
-          lastError: err.message
-        });
-      });
-
-      client.on('message', (topic, message) => {
-        const normalized = normalizeMqttPayload(message);
-        const current = mqttClients.get(widgetId)?.state;
-
-        setBrowserMqttState(widgetId, {
-          status: 'online',
-          topic,
-          lastMessageAt: new Date().toISOString(),
-          lastError: null,
-          messageCount: (current?.messageCount || 0) + 1,
-          payloadRaw: normalized.raw,
-          payloadPretty: normalized.pretty,
-          payloadIsJson: normalized.isJson
-        });
-      });
     });
   }
 
@@ -531,7 +259,7 @@
     }
 
     // Update browser tab title
-    document.title = s.siteName || 'InventorDash';
+    document.title = s.siteName || 'Dashma';
 
     // Show header now that settings are applied (was hidden to prevent FOUC)
     header.style.visibility = 'visible';
@@ -543,20 +271,7 @@
     grid.innerHTML = '';
 
     const sortedCategories = [...appData.categories].sort((a, b) => a.order - b.order);
-    const sortedTabs = [...(appData.tabs || [])].sort((a, b) => a.order - b.order);
-    renderCategoryTabs(sortedTabs);
-
-    const selectedTab = sortedTabs.find(tab => tab.id === selectedTabId) || sortedTabs[0];
-    const visibleCategories = selectedTab
-      ? sortedCategories.filter(category => (selectedTab.categoryIds || []).includes(category.id))
-      : sortedCategories;
-
     const numColumns = parseInt(appData.settings.columns) || 1;
-
-    if (visibleCategories.length === 0) {
-      grid.innerHTML = '<div class="no-categories-message">No categories assigned to this tab.</div>';
-      return;
-    }
 
     // Create column containers
     const columns = [];
@@ -568,7 +283,7 @@
     }
 
     // Distribute categories into columns (round-robin distribution)
-    visibleCategories.forEach((category, catIndex) => {
+    sortedCategories.forEach((category, catIndex) => {
       const categoryLinks = appData.links
         .filter(l => l.categoryId === category.id)
         .sort((a, b) => a.order - b.order);
@@ -598,11 +313,6 @@
       columns[columnIndex].appendChild(categoryEl);
     });
 
-    if (visibleCategories.length === 0) {
-      grid.innerHTML = '<div class="no-categories-message">No hay categorías en esta pestaña.</div>';
-      return;
-    }
-
     // Add click handlers for category headers
     document.querySelectorAll('.category-header').forEach(header => {
       header.addEventListener('click', toggleCategory);
@@ -621,30 +331,6 @@
     if (appData.settings.categoryHoverEffect === 'hacked') {
       setupHackedTextListeners('.cat-hover-hacked .category-title');
     }
-  }
-
-  function renderCategoryTabs(tabs) {
-    const tabContainer = document.getElementById('categoryTabs');
-    if (!tabContainer) return;
-
-    if (!selectedTabId && tabs.length > 0) {
-      selectedTabId = tabs[0].id;
-      localStorage.setItem('inventordash-selected-tab', selectedTabId);
-    }
-
-    tabContainer.innerHTML = tabs.map(tab => {
-      const isActive = selectedTabId === tab.id ? ' active' : '';
-      return `<button type="button" class="category-tab${isActive}" data-tab-id="${escapeHtml(tab.id)}">${escapeHtml(tab.name)}</button>`;
-    }).join('');
-
-    tabContainer.querySelectorAll('.category-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        const tabId = tab.dataset.tabId;
-        selectedTabId = tabId;
-        localStorage.setItem('inventordash-selected-tab', tabId);
-        renderCategories();
-      });
-    });
   }
 
   // Render a single link
@@ -742,8 +428,6 @@
     initClockWidgets();
     // Initialize weather widgets
     initWeatherWidgets();
-    // Initialize MQTT widgets
-    syncMqttWidgets();
   }
 
   // Render a single widget
@@ -753,8 +437,6 @@
         return renderServerMonitorWidget(widget);
       case 'clock':
         return renderClockWidget(widget);
-      case 'mqtt':
-        return renderMqttWidget(widget);
       case 'weather':
         return renderWeatherWidget(widget);
       case 'iframe':
@@ -1072,36 +754,6 @@
     `;
   }
 
-  // MQTT Widget
-  function renderMqttWidget(widget) {
-    const config = widget.config || {};
-    const classes = ['widget', 'mqtt-widget'];
-    classes.push(`width-${widget.width || 'full'}`);
-    if (widget.alignment) classes.push(`widget-align-${widget.alignment}`);
-
-    return `
-      <div class="${classes.join(' ')}"
-           data-widget-id="${widget.id}"
-           data-payload-view="${escapeHtml(config.payloadView || 'auto')}"
-           data-protocol="${escapeHtml(config.protocol || 'ws')}"
-           data-host="${escapeHtml(config.host || '')}"
-           data-port="${escapeHtml(String(config.port || ''))}"
-           data-path="${escapeHtml(config.path || '')}"
-           data-client-id="${escapeHtml(config.clientId || '')}"
-           data-username="${escapeHtml(config.username || '')}"
-           data-password="${escapeHtml(config.password || '')}"
-           data-topic="${escapeHtml(config.topic || '')}"
-           data-qos="${escapeHtml(String(config.qos || 0))}">
-        ${widget.title ? `<div class="widget-title">${escapeHtml(widget.title)}</div>` : ''}
-        <div class="mqtt-broker">${escapeHtml((config.protocol || 'ws') + '://' + (config.host || '') + (config.port ? ':' + config.port : '') + (config.path || ''))}</div>
-        <div class="mqtt-topic">${escapeHtml(config.topic || '')}</div>
-        <div class="mqtt-connection-status status-offline">Offline</div>
-        <pre class="mqtt-payload">No payload received yet.</pre>
-        <div class="mqtt-meta"></div>
-      </div>
-    `;
-  }
-
   // Iframe Widget
   function renderIframeWidget(widget) {
     const config = widget.config || {};
@@ -1152,7 +804,7 @@
       collapsedCategories = collapsedCategories.filter(id => id !== categoryId);
     }
 
-    localStorage.setItem('inventordash-collapsed', JSON.stringify(collapsedCategories));
+    localStorage.setItem('dashma-collapsed', JSON.stringify(collapsedCategories));
   }
 
   // Setup event listeners
@@ -1238,7 +890,7 @@
       if (header) header.setAttribute('aria-expanded', 'true');
     });
     collapsedCategories = [];
-    localStorage.setItem('inventordash-collapsed', JSON.stringify(collapsedCategories));
+    localStorage.setItem('dashma-collapsed', JSON.stringify(collapsedCategories));
   }
 
   // Collapse all categories
@@ -1251,7 +903,7 @@
       allCategoryIds.push(category.dataset.categoryId);
     });
     collapsedCategories = allCategoryIds;
-    localStorage.setItem('inventordash-collapsed', JSON.stringify(collapsedCategories));
+    localStorage.setItem('dashma-collapsed', JSON.stringify(collapsedCategories));
   }
 
   // Open search overlay
