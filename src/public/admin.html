@@ -723,13 +723,14 @@
 
         <div class="card">
           <h3 class="card-title">Export Configuration</h3>
-          <p class="text-muted mb-20">Download your current configuration as a JSON file.</p>
+          <p class="text-muted mb-20">Download your full configuration as a JSON file &mdash; appearance, categories, links, users, roles, authentication mode, and the SSO connection.</p>
+          <p class="warning-note">⚠ This file contains sensitive data: your SSO client secret and hashed login credentials. Store it securely and share it only with trusted administrators. Do not expose the import endpoint on an unauthenticated instance.</p>
           <button class="btn btn-primary" id="exportConfig">Download Config</button>
         </div>
 
         <div class="card">
           <h3 class="card-title">Import Configuration</h3>
-          <p class="text-muted mb-20">Upload a previously exported configuration file.</p>
+          <p class="text-muted mb-20">Upload a previously exported configuration file. This <strong>replaces</strong> the current admin credentials, authentication mode, SSO connection, users, roles, categories, links, and widgets on this instance.</p>
           <div class="file-upload" id="importConfigUpload">
             <input type="file" accept=".json" id="importConfigInput">
             <p class="file-upload-text">Click or drag to upload config file</p>

@@ -45,7 +45,7 @@ Navigate entirely with your keyboard:
 - Admins approve or deny from the panel, with a full **history** of past requests and actions
 
 ### 🛠️ Admin Panel
-Everything is configured through a web GUI at `/admin` - no config files to edit. Export and import your configuration as JSON for easy backup.
+Everything is configured through a web GUI at `/admin` - no config files to edit. Export and import your full configuration as JSON for easy backup or cloning to a new instance.
 
 ---
 
@@ -183,7 +183,11 @@ dashma/
 
 ![Authentication](screenshots/admin_authentication.png)
 
-**Backup** - Export and import your full configuration as JSON.
+**Backup** - Export and import your full configuration as JSON. The export round-trips a complete instance: appearance, categories, links, admin account, authentication mode, the SSO connection, roles and role mappings, users, and widgets.
+
+> ⚠️ **The export file contains secrets** — your SSO client secret and hashed login credentials. Store it securely and never expose the import endpoint on an unauthenticated instance.
+>
+> **Import is a restore, not a merge** — it replaces the current admin credentials, auth mode, SSO connection, users, roles, categories, links, and widgets (the admin panel asks you to confirm first). Pending link/category requests are not included. After restoring onto a **different hostname**, clear or update the SSO **Redirect URI** in Authentication settings so the OAuth callback matches the new host.
 
 ![Backup](screenshots/admin_backup.png)
 

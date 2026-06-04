@@ -3,7 +3,7 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 
-const CONFIG_PATH = path.join(__dirname, '..', 'data', 'config.json');
+const CONFIG_PATH = process.env.DASHMA_CONFIG_PATH || path.join(__dirname, '..', 'data', 'config.json');
 
 const defaultConfig = {
   settings: {
@@ -686,44 +686,97 @@ function getVisibleData(session) {
 }
 
 // Export/Import
+//
+// A backup round-trips a full instance into a new one. exportConfig emits the
+// whole config except the transient request queue, tagged with a version marker.
+// This deliberately includes auth mode, the Entra/SSO connection block (incl.
+// clientSecret), roles, role mappings, regular users (with password hashes),
+// the seen-SSO-user list, and widgets — everything a clone needs to behave the
+// same. The export file therefore contains secrets and credential hashes; the
+// admin UI and README warn that it must be stored securely.
 function exportConfig() {
   const config = getConfig();
 
-  // Create a copy of settings without auth-related fields
-  const { authMode, mainAuthMode, entraId, ...appearanceSettings } = config.settings;
-
-  // Return only Appearance, Categories, Links, and Account settings
-  // Excludes: authMode, mainAuthMode, entraId, users, requests
-  return {
-    settings: appearanceSettings,
+  // Deep-copy so the exported object never shares identity with the live cache
+  // (mirrors the JSON round-trip loadConfig uses). requests intentionally omitted —
+  // transient approval-queue state stays instance-local.
+  return JSON.parse(JSON.stringify({
+    exportVersion: 2,
+    settings: config.settings,
+    admin: config.admin,
+    users: config.users || [],
+    ssoUsers: config.ssoUsers || [],
     categories: config.categories,
     links: config.links,
-    admin: config.admin
-  };
+    widgets: config.widgets || []
+  }));
 }
 
+// Restore a backup into this instance with replace semantics: any section present
+// in the file overwrites the current value wholesale. Backward-compatible with v1
+// backups that lack the new sections — absent sections fall back to current, so an
+// old appearance-only export does not blank a configured instance's auth or users.
 function importConfig(newConfig) {
+  if (!newConfig || typeof newConfig !== 'object' || Array.isArray(newConfig)) {
+    throw new Error('Invalid config file');
+  }
+
+  const present = (key) => Object.hasOwn(newConfig, key);
+  const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+  // Validate the shape of any section that is present BEFORE touching state, so a
+  // structurally invalid file is rejected wholesale rather than persisted — a bad
+  // admin record would lock admins out, and a non-array categories/links would crash
+  // the public dashboard. (Deeper validation — role-id references, username dedup —
+  // remains out of scope; this is just the basic type guard.)
+  if (present('settings') && !isPlainObject(newConfig.settings)) {
+    throw new Error('Invalid config file: settings must be an object');
+  }
+  if (present('admin') && !(isPlainObject(newConfig.admin)
+      && typeof newConfig.admin.username === 'string'
+      && typeof newConfig.admin.passwordHash === 'string')) {
+    throw new Error('Invalid config file: admin must include username and passwordHash');
+  }
+  for (const key of ['users', 'ssoUsers', 'categories', 'links', 'widgets']) {
+    if (present(key) && !Array.isArray(newConfig[key])) {
+      throw new Error(`Invalid config file: ${key} must be an array`);
+    }
+  }
+
   const currentConfig = getConfig();
 
-  // Preserve auth settings if not in imported config
-  const mergedSettings = {
-    ...newConfig.settings,
-    authMode: newConfig.settings?.authMode || currentConfig.settings.authMode,
-    mainAuthMode: newConfig.settings?.mainAuthMode || currentConfig.settings.mainAuthMode,
-    entraId: newConfig.settings?.entraId || currentConfig.settings.entraId
-  };
+  // settings is shallow-MERGED (file wins) rather than replaced, so a v1 file whose
+  // settings lacks authMode/mainAuthMode/entraId does not wipe those keys on the target.
+  // Note the file spread comes last — the reverse of the legacy code, where current
+  // values would otherwise mask the imported ones. Nested objects (entraId,
+  // entraRoleAssignments) replace wholesale when the file supplies them.
+  const mergedSettings = { ...currentConfig.settings, ...(newConfig.settings || {}) };
 
-  // Merge imported config with preserved auth settings
-  configCache = {
+  // Every other section uses a uniform presence check: present in the file -> replace
+  // (an explicit empty array like users: [] counts as present and clears the section);
+  // absent -> keep current. requests is never imported.
+  const next = {
     ...currentConfig,
     settings: mergedSettings,
-    categories: newConfig.categories || currentConfig.categories,
-    links: newConfig.links || currentConfig.links,
-    admin: newConfig.admin || currentConfig.admin
-    // users and requests are preserved from current config
+    admin: present('admin') ? newConfig.admin : currentConfig.admin,
+    users: present('users') ? newConfig.users : currentConfig.users,
+    ssoUsers: present('ssoUsers') ? newConfig.ssoUsers : currentConfig.ssoUsers,
+    categories: present('categories') ? newConfig.categories : currentConfig.categories,
+    links: present('links') ? newConfig.links : currentConfig.links,
+    widgets: present('widgets') ? newConfig.widgets : currentConfig.widgets,
+    requests: currentConfig.requests
   };
 
-  saveConfig();
+  // Persist transactionally: only keep the swapped-in cache if the disk write
+  // succeeds, so a failed write never leaves memory diverged from disk.
+  const previous = configCache;
+  configCache = next;
+  try {
+    saveConfig();
+  } catch (err) {
+    configCache = previous;
+    throw err;
+  }
 }
 
 // Request management functions

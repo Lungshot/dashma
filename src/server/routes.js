@@ -610,9 +610,13 @@ async function registerRoutes(fastify) {
     });
 
     // Import config
-    fastify.post('/api/admin/import', async (request) => {
-      config.importConfig(request.body);
-      return { success: true };
+    fastify.post('/api/admin/import', async (request, reply) => {
+      try {
+        config.importConfig(request.body);
+        return { success: true };
+      } catch (err) {
+        return reply.code(400).send({ error: err.message || 'Invalid configuration' });
+      }
     });
 
     // Upload background image
